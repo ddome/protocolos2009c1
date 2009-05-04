@@ -26,9 +26,7 @@ InitLdap(void)
 	if( ldap_bind_s(ld,ADMIN_DN,ADMIN_PASSWD,LDAP_AUTH_SIMPLE) != LDAP_SUCCESS ){
 		fprintf(stderr,"InitLdap ERROR: El servidor LDAP rechazo el pedido de autentificacion del usuario root %d\n",ADMIN_DN);		
 	}
-	
-	GetClientDN("cacastro");
-	
+
 	return ld;
 }
 
