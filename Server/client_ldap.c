@@ -42,7 +42,7 @@ ClientAdd(LDAP *ld, client_t client)
 boolean 
 UserExist(LDAP *ld,char *user)
 {
-    struct berval bvalue;
+	struct berval bvalue;
 	int rc;
 	char *aux;
 	const char *compAttribute = CLIENT_KEY;	
@@ -51,10 +51,10 @@ UserExist(LDAP *ld,char *user)
 		return FALSE;
 
 	bvalue.bv_val = user;
-    bvalue.bv_len = strlen(user);
+	bvalue.bv_len = strlen(user);
 	
 	aux = GetClientDN(user);
-    rc = ldap_compare_ext_s( ld, aux, compAttribute, &bvalue, NULL, NULL );
+	rc = ldap_compare_ext_s( ld, aux, compAttribute, &bvalue, NULL, NULL );
 	free(aux);
 	
 	if( rc == LDAP_COMPARE_TRUE )
@@ -66,7 +66,7 @@ UserExist(LDAP *ld,char *user)
 boolean 
 PasswdIsValid(LDAP *ld, char *user, char *passwd)
 {
-    struct berval bvalue;
+	struct berval bvalue;
 	int rc;
 	char *aux;
 	const char *compAttribute = "userPassword";	
@@ -75,10 +75,10 @@ PasswdIsValid(LDAP *ld, char *user, char *passwd)
 		return FALSE;
 	
 	bvalue.bv_val = passwd;
-    bvalue.bv_len = strlen(passwd);
+	bvalue.bv_len = strlen(passwd);
 	
 	aux = GetClientDN(user);
-    rc = ldap_compare_ext_s( ld, aux, compAttribute, &bvalue, NULL, NULL );
+	rc = ldap_compare_ext_s( ld, aux, compAttribute, &bvalue, NULL, NULL );
 	free(aux);
 	
 	if( rc == LDAP_COMPARE_TRUE )
