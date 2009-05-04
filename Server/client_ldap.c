@@ -32,6 +32,13 @@ InitLdap(void)
 	return ld;
 }
 
+status 
+ClientAdd(LDAP *ld, client_t client)
+{
+	return OK;
+}
+
+
 boolean 
 UserExist(LDAP *ld,char *user)
 {
