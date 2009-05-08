@@ -75,7 +75,7 @@ int prepareTCP(const char * host,const char * port,type_t type)
 int listenTCP(int socketFD,int max_queue_len)
 {
 	int ret=0;
-	/*The  mex_queue_len  argument  defines  the maximum length to which the
+	/*The  max_queue_len  argument  defines  the maximum length to which the
 	 * queue of pending connections for the socket may grow.  If a connection
 	 * request arrives when the queue is full, the client may receive an error
 	 * with an indication of ECONNREFUSED or, if the underlying protocol
