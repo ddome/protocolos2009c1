@@ -5,6 +5,7 @@
 #include<string.h>
 #include<unistd.h>
 #include<errno.h>
+#include<stdlib.h>
 #include<sys/types.h>
 #include<sys/socket.h>
 #include<netinet/in.h>
@@ -31,15 +32,16 @@
 /*Message size error.*/
 #define MSG_SIZE_ERR -27
 
-
+typedef struct{
+    int num;
+    char mensaje[100];
+}packet_t;
 
 /*Especifica si el socket se debe crear para escuchar conexiones o para escuchar
  * conexiones o para conectarse a un cliente para la tranferencia de archivos.*/
 typedef enum{prepareServer=0,connectClient} type_t;
 
-#define SEND_FLAGS MSG_DONTWAIT
-
-int prepareTCP(const char * address,int port,type_t type);
+int prepareTCP(const char * host,const char * port,type_t type);
 
 int listenTCP(int socketFD,int max_queue_len);
 
@@ -49,8 +51,9 @@ int acceptTCP(int socketFD);
 
 int sendTCP(int socketFD,void * data,size_t size);
 
-void * receiveTCP();
+void * receiveTCP(int socketFD);
 
 void closeTCP(int socketFD);
 
 #endif /*TCPLIB_H_*/
+
