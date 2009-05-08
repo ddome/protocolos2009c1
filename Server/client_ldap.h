@@ -11,6 +11,7 @@
 
 /* Project includes */
 #include "../Common/defines.h"
+#include "../Common/app.h"
 
 /* Direccion por default */
 #define HOST "192.168.3.129"
