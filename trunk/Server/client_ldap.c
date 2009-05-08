@@ -33,6 +33,82 @@ InitLdap(void)
 status 
 ClientAdd(LDAP *ld, client_t client)
 {
+	LDAPMod *attributes[9];
+	LDAPMod attribute1,attribute2,attribute3,attribute4,attribute5,attribute6,attribute7,attribute8;
+	
+	char * objectclass_vals[] = { "top", "person", "organizationalPerson", "inetOrgPerson", NULL };
+	char *  ou_value[]		  = {"clients",NULL};
+	char * cn_value[]         = {client.user,NULL};
+	char * uid_value[]        = {client.user,NULL};
+	char * mail_value[]       = {client.mail,NULL};
+	char * pass_value[]		  = {client.passwd,NULL};
+	char * sn_value[]		  = {client.user,NULL};
+	char * desc_value[]		  = {client.desc,NULL};
+	
+	char *dn = GetClientDN(client.user);
+	
+	/* objectclass */
+	
+	attribute1.mod_op = LDAP_MOD_ADD;
+	attribute1.mod_type = "objectclass";
+	attribute1.mod_vals.modv_strvals = objectclass_vals;	
+	attributes[0] = &attribute1;
+
+	/* ou */
+	
+	attribute2.mod_op = LDAP_MOD_ADD;
+	attribute2.mod_type = "ou";
+	attribute2.mod_vals.modv_strvals = ou_value;	
+	attributes[1] = &attribute2;
+	
+	/* cn */
+	
+	attribute3.mod_op = LDAP_MOD_ADD;
+	attribute3.mod_type = "cn";
+	attribute3.mod_vals.modv_strvals = cn_value;	
+	attributes[2] = &attribute3;
+	
+	/* uid */
+	
+	attribute4.mod_op = LDAP_MOD_ADD;
+	attribute4.mod_type = "uid";
+	attribute4.mod_vals.modv_strvals = uid_value;	
+	attributes[3] = &attribute4;
+	
+	/* mail */
+	
+	attribute5.mod_op = LDAP_MOD_ADD;
+	attribute5.mod_type = "mail";
+	attribute5.mod_vals.modv_strvals = mail_value;	
+	attributes[4] = &attribute5;
+	
+	/* userPassword */
+	
+	attribute6.mod_op = LDAP_MOD_ADD;
+	attribute6.mod_type = "userPassword";
+	attribute6.mod_vals.modv_strvals = pass_value;	
+	attributes[5] = &attribute6;
+	
+	/* sn */
+	
+	attribute7.mod_op = LDAP_MOD_ADD;
+	attribute7.mod_type = "sn";
+	attribute7.mod_vals.modv_strvals = sn_value;	
+	attributes[6] = &attribute7;
+	
+	/* description */
+	
+	attribute8.mod_op = LDAP_MOD_ADD;
+	attribute8.mod_type = "description";
+	attribute8.mod_vals.modv_strvals = desc_value;	
+	attributes[7] = &attribute8;
+	
+	/* Fin del arreglo */
+	attributes[8] = NULL;
+	
+	if ( ldap_add_s(ld, dn, attributes) != LDAP_SUCCESS )
+		fprintf(stderr,"LDAP ERROR: No pudo agregarse el cliente\n");
+	
 	return OK;
 }
 
