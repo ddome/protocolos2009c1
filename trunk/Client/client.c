@@ -15,7 +15,7 @@ int main (int argc, const char * argv[]) {
 	strcpy(log.user,"nbombau");
 	strcpy(log.passwd,"secret");
 	
-	ret=connectTCP("127.0.0.1","1234");
+	ret=connectTCP("127.0.0.1","1044");
 	if(ret<0)
 	{
 		printf("Se produjo un error al conectar.\n");
