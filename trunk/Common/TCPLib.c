@@ -89,7 +89,7 @@ int listenTCP(int socketFD,int max_queue_len)
 	return ret;
 }
 
-int connectTCP(const char * host,int port)
+int connectTCP(const char * host,const char * port)
 {
 	int socketFD=0;
 	struct sockaddr_in cAddress;
@@ -103,7 +103,7 @@ int connectTCP(const char * host,int port)
 	{
 		memset(&cAddress, 0, sizeof(cAddress));
 		cAddress.sin_family=AF_INET;
-		cAddress.sin_port=htons((unsigned short)port);
+		cAddress.sin_port=htons((unsigned short)atoi(port));
 
 		if ( (phe = gethostbyname(host)) )
 			memcpy(&cAddress.sin_addr, phe->h_addr, phe->h_length);
@@ -165,10 +165,12 @@ int sendTCP(int socketFD,void * data,size_t size)
 	return ret;
 }
 
-void * receiveTCP(int socketFD)
+void * receiveTCP(int socketFD,size_t size)
 {
 	void * ret;
-	ret=malloc(sizeof(packet_t));
+	ret=malloc(sizeof(size));
+	if(ret==NULL)
+		return NULL;
 	memset(ret,0,sizeof(packet_t));
 	if(recv(socketFD,ret,sizeof(packet_t),0)<0)
 	    return NULL;

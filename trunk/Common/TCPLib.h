@@ -45,13 +45,13 @@ int prepareTCP(const char * host,const char * port,type_t type);
 
 int listenTCP(int socketFD,int max_queue_len);
 
-int connectTCP();
+int connectTCP(const char * host,const char * port);
 
 int acceptTCP(int socketFD);
 
 int sendTCP(int socketFD,void * data,size_t size);
 
-void * receiveTCP(int socketFD);
+void * receiveTCP(int socketFD,size_t size);
 
 void closeTCP(int socketFD);
 

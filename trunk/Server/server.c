@@ -8,6 +8,7 @@
 #include "../Common/genlib.h"
 #include "client_ldap.h"
 #include "server.h"
+#include "../Common/TCPLib.h"
 
 
 /* Variable global que guarda la coneccion con el servidor LDAP */
@@ -27,11 +28,44 @@ InitServer(void)
 status 
 StartServer(void)
 {
+	int socket;
+	int newSocket;
+	void * paquete;
+	login_t log;
 	/* Inicializar socket de escucha */
 	/* Iniciar comunicacion */
 	/* Interpretar mensaje */
 	/* Crear proceso de ser necesario y atender proceso */
+	
+	/*client_t bombau;	
+	strcpy(bombau.user,"nbombau");
+	strcpy(bombau.passwd,"secret");
+	strcpy(bombau.mail,"bombax@gmail.com");
+	strcpy(bombau.desc, "sarasa");
+	bombau.level = 10;
+	ClientAdd(ld, bombau);
+	 */
+	
+	ack_t toAck;
+	toAck.ret_code=1;
+	
+	socket=prepareTCP("127.0.0.1","1234",prepareServer);
+	listenTCP(socket,5);
+	while(1)
+	{
+		newSocket=acceptTCP(socket);
+
+		paquete=receiveTCP(newSocket, sizeof(header_t)+sizeof(login_t));
+		memmove(&log,paquete+sizeof(header_t),sizeof(login_t));
+		free(paquete);
+		printf("Username: (%s) - Password: (%s)\n",log.user,log.passwd);
 		
+		sendTCP(newSocket, &toAck, sizeof(ack_t));
+		
+		closeTCP(newSocket);
+	}	
+	closeTCP(socket);
+	
 	return OK;
 }
 
