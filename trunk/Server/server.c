@@ -31,17 +31,7 @@ StartServer(void)
 	/* Iniciar comunicacion */
 	/* Interpretar mensaje */
 	/* Crear proceso de ser necesario y atender proceso */
-	
-	client_t cliente;
-	
-	strcpy(cliente.user,"ehgato");
-	strcpy(cliente.passwd,"hola");
-	strcpy(cliente.mail,"marolio@heman.com");
-	strcpy(cliente.desc,"pibe chorro");
-	cliente.level=10;
-	
-	ClientAdd(ld, cliente);
-	
+		
 	return OK;
 }
 

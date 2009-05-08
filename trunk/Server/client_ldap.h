@@ -25,6 +25,11 @@
 #define CLIENT_KEY "uid"
 #define CLIENT_PATH "ou=clients,o=movie_store.com"
 
+/* Datos del servidor */
+#define MOVIE_STORE_DN   "o=movie_store.com"
+#define MOVIE_STORE_NAME "movie_store.com"
+#define MOVIE_STORE_LOCATION "Buenos Aires"
+
 /* Funciones */
 
 LDAP * InitLdap(void);

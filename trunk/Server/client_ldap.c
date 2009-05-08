@@ -13,20 +13,41 @@
 
 static char * GetClientDN(char *user);
 
+static status RootAdd(LDAP *ld);
+static status ClientsInit(LDAP *ld);
+static boolean RootExists(LDAP *ld);
+static boolean ClientListExists(LDAP *ld);
+
 LDAP * 
 InitLdap(void)
 {
 	LDAP *ld;
 	
+	/* Conectarse al servidor */
 	ld = ldap_open(HOST,PORT);
 	if( ld == NULL ){
 		fprintf(stderr,"InitLdap ERROR: No pudo establecerce una coneccion con el servidor LDAP en el host %s:%d\n",HOST,PORT);
 	}
 	
+	/* Se identifica al usuario root */
 	if( ldap_bind_s(ld,ADMIN_DN,ADMIN_PASSWD,LDAP_AUTH_SIMPLE) != LDAP_SUCCESS ){
 		fprintf(stderr,"InitLdap ERROR: El servidor LDAP rechazo el pedido de autentificacion del usuario root %d\n",ADMIN_DN);		
 	}
-
+	
+	/* Se inicializa la base de datos */
+	if( !RootExists(ld) ) {
+		if( RootAdd(ld) == FATAL_ERROR ) {
+			EndLdap(ld);
+			return NULL;
+		}
+	}
+	if( !ClientListExists(ld) ) {
+		if( ClientsInit(ld) == FATAL_ERROR ) {
+			EndLdap(ld);
+			return NULL;
+		}
+	}
+	
 	return ld;
 }
 
@@ -189,4 +210,124 @@ GetClientDN(char *user)
 	
 	return aux;	
 }
+	   
+static boolean 
+RootExists(LDAP *ld)
+{	  
+	struct berval bvalue;
+		
+	if( ld == NULL )
+		return FALSE;
+	
+	bvalue.bv_val = MOVIE_STORE_NAME;
+	bvalue.bv_len = strlen(MOVIE_STORE_NAME);
+	
+	if(ldap_compare_ext_s( ld, MOVIE_STORE_DN, "o", &bvalue, NULL, NULL ) == LDAP_COMPARE_TRUE )
+		return TRUE;
+	else
+		return FALSE;	
+}
+	   
+
+static status 
+RootAdd(LDAP *ld)
+{
+	LDAPMod *attributes[4];
+	LDAPMod attribute1,attribute2,attribute3;
+	
+	char * objectclass_vals[] = { "top","organization",NULL };
+	char * o_value[]        = {MOVIE_STORE_NAME,NULL};
+	char * l_value[]        = {MOVIE_STORE_LOCATION,NULL};
+	
+	/* objectclass */
+	
+	attribute1.mod_op = LDAP_MOD_ADD;
+	attribute1.mod_type = "objectclass";
+	attribute1.mod_vals.modv_strvals = objectclass_vals;	
+	attributes[0] = &attribute1;
+	
+	/* o */
+	
+	attribute2.mod_op = LDAP_MOD_ADD;
+	attribute2.mod_type = "o";
+	attribute2.mod_vals.modv_strvals = o_value;	
+	attributes[1] = &attribute2;
+	
+	/* l */
+	
+	attribute3.mod_op = LDAP_MOD_ADD;
+	attribute3.mod_type = "l";
+	attribute3.mod_vals.modv_strvals = l_value;	
+	attributes[2] = &attribute3;
+	
+	attributes[3] = NULL;
+		
+	if ( ldap_add_s(ld, MOVIE_STORE_DN, attributes) != LDAP_SUCCESS ) {
+		fprintf(stderr,"LDAP ERROR: No se pudo agregar el nodo inicial %s\n", MOVIE_STORE_DN);
+		return FATAL_ERROR;
+	}
+		
+	return OK;	
+}
+
+static boolean 
+ClientListExists(LDAP *ld)
+{	  
+	struct berval bvalue;
+	
+	if( ld == NULL )
+		return FALSE;
+	
+	bvalue.bv_val = "clients";
+	bvalue.bv_len = strlen("clients");
+	
+	if(ldap_compare_ext_s( ld, CLIENT_PATH, "ou", &bvalue, NULL, NULL ) == LDAP_COMPARE_TRUE )
+		return TRUE;
+	else
+		return FALSE;	
+}
+
+static status 
+ClientsInit(LDAP *ld)
+{
+	LDAPMod *attributes[4];
+	LDAPMod attribute1,attribute2,attribute3;
+	
+	char * objectclass_vals[] = { "top","organizationalUnit",NULL };
+	char * ou_value[]        = {"clients",NULL};
+	char * desc_value[]        = {"Lista de clientes",NULL};
+	
+	/* objectclass */
+	
+	attribute1.mod_op = LDAP_MOD_ADD;
+	attribute1.mod_type = "objectclass";
+	attribute1.mod_vals.modv_strvals = objectclass_vals;	
+	attributes[0] = &attribute1;
+	
+	/* ou */
+	
+	attribute2.mod_op = LDAP_MOD_ADD;
+	attribute2.mod_type = "ou";
+	attribute2.mod_vals.modv_strvals = ou_value;	
+	attributes[1] = &attribute2;
+	
+	/* description */
+	
+	attribute3.mod_op = LDAP_MOD_ADD;
+	attribute3.mod_type = "description";
+	attribute3.mod_vals.modv_strvals = desc_value;	
+	attributes[2] = &attribute3;
+	
+	attributes[3] = NULL;
+	
+	if ( ldap_add_s(ld, CLIENT_PATH, attributes) != LDAP_SUCCESS ) {
+		fprintf(stderr,"LDAP ERROR: No se pudo inicializar la lista de clientes %s\n", CLIENT_PATH);
+		return FATAL_ERROR;
+	}
+	
+	
+	return OK;			
+}	
+	
+	
 
