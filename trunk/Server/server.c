@@ -25,9 +25,9 @@ InitServer(void)
 	
 	/* Iniciar el servidor ldap */
 	
-	if( (ld=InitLdap()) == NULL ) {
+	/*if( (ld=InitLdap()) == NULL ) {
 		return FATAL_ERROR;
-	}
+	}*/
 		
 	/* Iniciar TCP */
 	
@@ -51,7 +51,6 @@ StartServer(void)
 	void * paquete;
 	login_t log;	
 	ack_t to_ack;
-	
 	while(1) {
 		
 		if( (newSocket=acceptTCP(passive_s)) <= 0 ) {
