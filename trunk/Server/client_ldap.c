@@ -127,8 +127,10 @@ ClientAdd(LDAP *ld, client_t client)
 	/* Fin del arreglo */
 	attributes[8] = NULL;
 	
-	if ( ldap_add_s(ld, dn, attributes) != LDAP_SUCCESS )
+	if ( ldap_add_s(ld, dn, attributes) != LDAP_SUCCESS ) {
 		fprintf(stderr,"LDAP ERROR: No pudo agregarse el cliente\n");
+		return ERROR;
+	}
 	
 	return OK;
 }
