@@ -50,7 +50,8 @@ int prepareTCP(const char * host,const char * port,type_t type);
 int listenTCP(int socketFD,int max_queue_len);
 
 /*Le indicas a que ip y puerto te queres conectar. Si la conexion
- salio bien te devulve un file descriptor. Tiene que ser mayor a 0, sino es error.*/
+ salio bien te devulve un file descriptor. Tiene que ser mayor a 0, sino es error.
+ El file descriptor se usa con sendTCP y receiveTCP*/
 int connectTCP(const char * host,const char * port);
 
 
