@@ -41,18 +41,30 @@ typedef struct{
  * conexiones o para conectarse a un cliente para la tranferencia de archivos.*/
 typedef enum{prepareServer=0,connectClient} type_t;
 
+/*Le mandas el IP y el puerto como strings. En type pone prepareServer.
+ te devuelve un file descriptor. Tiene que ser mayor a 0, sino es error.*/
 int prepareTCP(const char * host,const char * port,type_t type);
 
+/*Le mandas el file descriptor q te devolvio prepareTCP y en max_queue_len
+ ponele 10. Devulve 0 si salio todo bien y un numero negativo si hubo error.*/
 int listenTCP(int socketFD,int max_queue_len);
 
+/*Le indicas a que ip y puerto te queres conectar. Si la conexion
+ salio bien te devulve un file descriptor. Tiene que ser mayor a 0, sino es error.*/
 int connectTCP(const char * host,const char * port);
 
+
+/*Le envias el file descriptor que te dio pepareTCP y se queda blocqueado hasta que
+ llegue una nueva solicitud de conexion. Es bloqueante. Cuando alguien pide conectarse 
+ esta fucion devuelve un NUEVO file descriptor que usas para sendTCP y receiveTCP.*/
 int acceptTCP(int socketFD);
 
 int sendTCP(int socketFD,void * data,size_t size);
 
+/*Es necesario liberar lo q devuelve.*/
 void * receiveTCP(int socketFD,size_t size);
 
+/*Cierra una conexion determinada.*/
 void closeTCP(int socketFD);
 
 #endif /*TCPLIB_H_*/
