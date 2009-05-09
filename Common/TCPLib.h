@@ -54,7 +54,6 @@ int listenTCP(int socketFD,int max_queue_len);
  El file descriptor se usa con sendTCP y receiveTCP*/
 int connectTCP(const char * host,const char * port);
 
-
 /*Le envias el file descriptor que te dio pepareTCP y se queda blocqueado hasta que
  llegue una nueva solicitud de conexion. Es bloqueante. Cuando alguien pide conectarse 
  esta fucion devuelve un NUEVO file descriptor que usas para sendTCP y receiveTCP.*/
