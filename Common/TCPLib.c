@@ -3,18 +3,18 @@
 
 int prepareTCP(const char * host,const char * port,type_t type)
 {
-	int socketFD;
+	int socketFD=0;
 	struct sockaddr_in sAddress;
 	//struct hostent	*phe;
 	struct protoent *ppe;
 	
-	if ( (ppe = getprotobyname("tcp")) == 0)
+	/*if ( (ppe = getprotobyname("tcp")) == 0)
 	{
 	    //Agregar syslog
 	    socketFD=GEN_ERROR;
-	}
+	}*/
 	
-	if( (socketFD<0) && (socketFD=socket(AF_INET,SOCK_STREAM,0)) == -1 )
+	if( (socketFD<0) || (socketFD=socket(AF_INET,SOCK_STREAM,0)) == -1 )
 	{
 		//Agregar el syslog
 		socketFD=GEN_ERROR;
