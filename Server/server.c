@@ -4,6 +4,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../Common/genlib.h"
 #include "client_ldap.h"
@@ -17,7 +19,6 @@ LDAP *ld;
 /* Puerto de conexion del servidor */
 int passive_s;
 
-
 status 
 InitServer(void)
 {
@@ -25,9 +26,9 @@ InitServer(void)
 	
 	/* Iniciar el servidor ldap */
 	
-	/*if( (ld=InitLdap()) == NULL ) {
+	if( (ld=InitLdap()) == NULL ) {
 		return FATAL_ERROR;
-	}*/
+	}
 		
 	/* Iniciar TCP */
 	
@@ -49,8 +50,7 @@ StartServer(void)
 {
 	int newSocket;
 	void * paquete;
-	login_t log;	
-	ack_t to_ack;
+	
 	while(1) {
 		
 		if( (newSocket=acceptTCP(passive_s)) <= 0 ) {
@@ -59,12 +59,9 @@ StartServer(void)
 		}
 
 		paquete=receiveTCP(newSocket, sizeof(header_t)+sizeof(login_t));
-		memmove(&log,paquete+sizeof(header_t),sizeof(login_t));
-		//free(paquete);
-		printf("Username: (%s) - Password: (%s)\n",log.user,log.passwd);
-		to_ack.ret_code = 1;
-		sendTCP(newSocket, &to_ack, sizeof(ack_t));
-		
+		//memmove(&log,paquete+sizeof(header_t),sizeof(login_t));
+		Session(paquete,newSocket);
+	
 		closeTCP(newSocket);
 	}	
 	closeTCP(passive_s);
@@ -77,3 +74,70 @@ EndServer(void)
 {
 	EndLdap(ld);
 }
+
+
+/* Atencion de pedidos */
+
+
+status
+Session(void *packet,int socket)
+{
+	header_t header;
+	void *info;
+	
+	memmove(&header, packet, sizeof(header));
+	
+	switch (header.opCode) {
+		case __USER_LOGIN__:
+			if( (info=malloc(sizeof(login_t))) == NULL ) {
+				return FATAL_ERROR;
+			}
+			memmove(info, packet + sizeof(header_t), sizeof(login_t) );
+			return UserLogin(*(login_t*)info,socket);
+			break;
+		default:
+			fprintf(stderr, "No se reconocio el op_code:%d\n",header.opCode);
+			return FATAL_ERROR;
+			break;
+	}
+	
+}
+
+status
+UserLogin(login_t log,int socket)
+{
+	int ret;	
+	ack_t to_ack;
+	char *user;
+	char *passwd;
+	
+	user=malloc(strlen(log.user)+1);	
+	passwd=malloc(strlen(log.passwd)+1);
+	
+	/*if( (user=malloc(strlen(log.user)+1)) == NULL )
+		return FATAL_ERROR;
+	if( (passwd=malloc(strlen(log.passwd)+1)) == NULL )
+		return FATAL_ERROR;
+	*/
+	
+	strcpy(user,log.user);
+	strcpy(passwd,log.passwd);
+		
+	ret = __LOGIN_OK__;
+		
+	if( !UserExist(ld, user) )
+		return __USER_ERROR__;
+	if( !PasswdIsValid(ld, user, passwd) )
+		return __PASSWD_ERROR__;
+		
+	/* Debugueo */
+	printf("Username: (%s) - Password: (%s)\n",log.user,log.passwd);
+	
+	to_ack.ret_code = ret;
+	sendTCP(socket, &to_ack, sizeof(ack_t));
+	
+	return OK;
+}
+
+
+

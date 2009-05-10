@@ -43,3 +43,4 @@ boolean PasswdIsValid(LDAP *ld, char *user, char *passwd);
 void EndLdap(LDAP *ld);
 
 #endif
+

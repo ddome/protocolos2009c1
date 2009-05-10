@@ -6,6 +6,8 @@
 #ifndef __APP_HEADER_H_
 #define __APP_HEADER_H_
 
+#include "defines.h"
+
 #define MAX_USER_LEN  50
 #define MAX_USER_PASS 50
 #define MAX_USER_DESC 300
@@ -16,8 +18,14 @@
 #define MAX_MOVIE_PLOT 300
 #define M_SIZE 50
 
-/* Estructuras del protocolo de aplicacion */
+/* Codigos del pedido (opCode) */
 
+#define __USER_LOGIN__             0L
+#define __USER_ERROR__             1L
+#define __PASSWD_ERROR__           2L
+#define __LOGIN_OK__               3L
+
+/* Estructuras del protocolo de aplicacion */
 
 /* Header */
 typedef struct {
