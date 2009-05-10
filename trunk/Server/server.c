@@ -83,17 +83,16 @@ status
 Session(void *packet,int socket)
 {
 	header_t header;
-	void *info;
+	login_t log;
+	char *user;
+	char *passwd;
 	
 	memmove(&header, packet, sizeof(header));
 	
 	switch (header.opCode) {
-		case __USER_LOGIN__:
-			if( (info=malloc(sizeof(login_t))) == NULL ) {
-				return FATAL_ERROR;
-			}
-			memmove(info, packet + sizeof(header_t), sizeof(login_t) );
-			return UserLogin(*(login_t*)info,socket);
+		case __USER_LOGIN__:			
+			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );				
+			return UserLogin(log,socket);
 			break;
 		default:
 			fprintf(stderr, "No se reconocio el op_code:%d\n",header.opCode);
@@ -111,12 +110,10 @@ UserLogin(login_t log,int socket)
 	char *user;
 	char *passwd;
 	
-	void *prueba=NULL;
+	printf("-----%s------\n",log.user);
 	
-	prueba = malloc(10);
-	
-	user=malloc(strlen(log.user)+1);	
-	passwd=malloc(strlen(log.passwd)+1);
+	user=calloc(1,strlen(log.user)+1);	
+	passwd=calloc(1,strlen(log.passwd)+1);
 	
 	/*if( (user=malloc(strlen(log.user)+1)) == NULL )
 		return FATAL_ERROR;
