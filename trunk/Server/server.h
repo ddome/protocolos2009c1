@@ -26,7 +26,11 @@ void EndServer(void);
 /*					     Atencion de pedidos				             */
 /*************************************************************************/
 
+status Session(void *packet,int socket);
 
+status UserLogin(login_t log,int socket);
+
+status NewClient(client_t client,int socket);
 
 /*************************************************************************/
 

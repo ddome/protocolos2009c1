@@ -146,7 +146,7 @@ UserExist(LDAP *ld,char *user)
 	
 	if( ld == NULL || user == NULL )
 		return FALSE;
-
+		
 	bvalue.bv_val = user;
 	bvalue.bv_len = strlen(user);
 	
@@ -330,6 +330,3 @@ ClientsInit(LDAP *ld)
 	
 	return OK;			
 }	
-	
-	
-

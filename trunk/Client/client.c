@@ -1,35 +1,71 @@
-#include <stdio.h>
-#include "../Common/defines.h"
-#include "../Common/app.h"
-#include "../Common/TCPLib.h"
+/*
+ *  client.c
+ *  MovieStoreClient
+ *
+ *  Created by Damian Dome on 5/10/09.
+ *  Copyright 2009 __MyCompanyName__. All rights reserved.
+ *
+ */
 
+#include "client.h"
+#include "Prompt.h"
 
-int main (int argc, const char * argv[]) {
-	login_t log;
-	int ret;
-	int aux;
-	int size;
-	ack_t * resp;
-	void * toSend;
-	header_t header;
-	strcpy(log.user,"nbombau");
-	strcpy(log.passwd,"secret");
-	
-	ret=connectTCP("127.0.0.1","1044");
-	if(ret<0)
-	{
-		printf("Se produjo un error al conectar.\n");
-		return -1;
-	}
-	size=sizeof(header_t) + sizeof(login_t);
-	toSend=malloc(size);
-	memmove(toSend,&header,sizeof(header_t));
-	memmove(toSend+sizeof(header_t),&log,sizeof(login_t));
-	aux=sendTCP(ret,toSend,size);
-	
-	
-	resp=receiveTCP(ret,sizeof(ack_t));
-	printf("El ACK fue de: %ld\n",resp->ret_code);
-	close(ret);
-	return 0;
+status 
+InitClient(void)
+{
+	return OK;
 }
+
+status
+StartClient(void)
+{	
+	Prompt();
+	return OK;
+}
+
+void
+EndClient(void)
+{
+	return;
+}
+
+client_login_status
+UserLogin(char *user, char* passwd)
+{
+	login_t log;
+	int size;
+	ack_t *ack_ptr;
+	int ret;
+	void * to_send;
+	header_t header;
+	int socket;
+	
+	strcpy(log.user,user);
+	strcpy(log.passwd,passwd);
+	
+	header.opCode = __USER_LOGIN__;
+	header.total_objects = 1;
+	
+	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
+
+		return LOGIN_CONNECT_ERROR;
+	}
+	
+	size = sizeof(header_t) + sizeof(login_t);
+	to_send = malloc(size);
+	
+	memmove(to_send,&header,sizeof(header_t));
+	memmove(to_send+sizeof(header_t),&log,sizeof(login_t));
+
+	sendTCP(socket,to_send,size);
+
+	ack_ptr = receiveTCP(socket,sizeof(ack_t));	
+	ret = ack_ptr->ret_code;
+	
+	//free(ack_ptr);
+	close(socket);	
+	
+	return ret;
+}
+
+
