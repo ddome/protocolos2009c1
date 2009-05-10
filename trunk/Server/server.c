@@ -111,6 +111,10 @@ UserLogin(login_t log,int socket)
 	char *user;
 	char *passwd;
 	
+	void *prueba=NULL;
+	
+	prueba = malloc(10);
+	
 	user=malloc(strlen(log.user)+1);	
 	passwd=malloc(strlen(log.passwd)+1);
 	
