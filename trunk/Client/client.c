@@ -47,7 +47,6 @@ UserLogin(char *user, char* passwd)
 	header.total_objects = 1;
 	
 	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
-
 		return LOGIN_CONNECT_ERROR;
 	}
 	
@@ -60,7 +59,13 @@ UserLogin(char *user, char* passwd)
 	sendTCP(socket,to_send,size);
 
 	ack_ptr = receiveTCP(socket,sizeof(ack_t));	
-	ret = ack_ptr->ret_code;
+	
+	if( ack_ptr->ret_code == __LOGIN_OK__ )
+		ret = USER_LOGIN_OK;
+	if( ack_ptr->ret_code == __USER_ERROR__ )
+	   ret = LOGIN_USER_INVALID;
+	if( ack_ptr->ret_code == __PASSWD_ERROR__ )
+	   ret = LOGIN_PASS_INVALID;
 	
 	//free(ack_ptr);
 	close(socket);	

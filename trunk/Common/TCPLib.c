@@ -159,7 +159,7 @@ int sendTCP(int socketFD,void * data,size_t size)
 								break;
 			case EMSGSIZE: 		ret=MSG_SIZE_ERR;
 								break;
-			default:			ret=GEN_ERROR;
+			default:            ret=GEN_ERROR;
 		}
 	}
 	return ret;
@@ -168,11 +168,10 @@ int sendTCP(int socketFD,void * data,size_t size)
 void * receiveTCP(int socketFD,size_t size)
 {
 	void * ret;
-	ret=malloc(sizeof(size));
-	if(ret==NULL)
+	if( (ret=calloc(1,size)) == NULL )
 		return NULL;
-	memset(ret,0,sizeof(packet_t));
-	if(recv(socketFD,ret,sizeof(packet_t),0)<0)
+	
+	if(recv(socketFD,ret,size,0)<0)
 	    return NULL;
 	
 	return ret;
