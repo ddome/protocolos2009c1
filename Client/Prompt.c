@@ -67,7 +67,7 @@ static int Login_Command(scannerADT scanner, void * data)
 			case LOGIN_PASS_INVALID:
 				printf("La clave es invalida para el usuario solicitado\n");
 				break;
-			case LOGIN_OK:
+			case USER_LOGIN_OK:
 				printf("%s, bienvenido a MovieStoreServer\n",aux1);
 				strcpy(user, aux1);
 				break;

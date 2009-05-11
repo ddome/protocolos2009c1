@@ -15,7 +15,7 @@
 #include "../Common/genlib.h"
 #include "../Common/app.h"
 
-typedef enum client_login_status { LOGIN_CONNECT_ERROR=-3,LOGIN_USER_INVALID =-2, LOGIN_PASS_INVALID=-1, LOGIN_OK=1 } client_login_status;
+typedef enum client_login_status { LOGIN_CONNECT_ERROR=-3,LOGIN_USER_INVALID =-2, LOGIN_PASS_INVALID=-1, USER_LOGIN_OK=1 } client_login_status;
 
 status InitClient(void);
 status StartClient(void);
