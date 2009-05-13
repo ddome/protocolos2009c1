@@ -30,7 +30,10 @@
 /* Codigos de cambio de datos */
 #define __NEW_PASSWD__             5L
 #define __CHANGE_OK__			   6L
+
+/* Codigos de seguridad */
 #define __USER_IS_NOT_LOG__        7L
+#define __USER_ACCESS_DENY__	   8L
 
 /* Estructuras del protocolo de aplicacion */
 
@@ -38,8 +41,8 @@
 typedef struct {
 	unsigned long int opCode;
 	unsigned long int total_objects;
-	char user[MAX_USER_LEN]; /* null para usuarios anonimos */
-	char passwd[MAX_USER_PASS]; /* null para usuarios anonimos */
+	char user[MAX_USER_LEN]; /* 'anonimo' para usuarios anonimos */
+	char passwd[MAX_USER_PASS]; /* 'anonimo' para usuarios anonimos */
 } header_t;
 
 /* User Login */

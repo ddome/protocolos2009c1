@@ -30,6 +30,11 @@ int passive_s;
 /* Informacion de los usuarios online */
 hashADT users_online;
 
+/* Static functions */
+
+static boolean UserCanAcces(char *user,char *passwd);
+
+
 status 
 InitServer(void)
 {
@@ -71,7 +76,7 @@ StartServer(void)
 	nfds = getdtablesize();
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
-		
+	
 	while(1) {
 		
 		memcpy(&rfds, &afds, sizeof(rfds));
@@ -136,12 +141,14 @@ Session(void *packet,int socket)
 	switch (header.opCode) {
 		case __USER_LOGIN__:
 			/* Logueo al ususario */
-			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );				
+			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );	
+			fprintf(stderr,"Llego un pedido de --login-- de user:%s passwd:%s\n",log.user,log.passwd);
 			return UserLogin(log,socket);
 			break;
 		case __NEW_PASSWD__:
 			/* Cambio de clave */
-			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );				
+			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );
+			fprintf(stderr,"Llego un pedido de --new password-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserNewPasswd(log,socket,header.user,header.passwd);
 			break;
 			
@@ -183,11 +190,7 @@ UserLogin(login_t log,int socket)
 		else
 			ret = __USER_IS_LOG__;
 	}
-		
-	/* Debugueo */
-	printf("Username: (%s) - Password: (%s)\n",log.user,log.passwd);
-	
-	/* Mando al respeusta */
+	/* Mando al respuesta */
 	to_ack.ret_code = ret;
 	sendTCP(socket, &to_ack, sizeof(ack_t));
 	
@@ -197,36 +200,33 @@ UserLogin(login_t log,int socket)
 status 
 UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 {
-	login_t *id;
-	int pos;
 	char *aux_user;
 	char *aux_passwd;
-	int ret;
-	
-	strcpy(id->user, user);
-	strcpy(id->passwd, passwd);
-	
+	int ret = __CHANGE_OK__;
+	ack_t ack;
+
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
 		ret = __USER_IS_NOT_LOG__;
 	}
-		
-	/* Control de seguridad */
-	if( (pos=Lookup(users_online,id) == -1) ) {
-		ret = __USER_IS_NOT_LOG__;
+	/* Control de la identidad del solicitante */
+	else if( !UserCanAcces(user, passwd) ) {
+		ret = __USER_ACCESS_DENY__;
 	}
 	
-	/* Falta el control de la passwd */
-	
-	aux_user = CopyString(log.user);
-	aux_passwd = CopyString(log.passwd);
-	
-	ChangePasswd(ld, aux_user, aux_passwd);
-	free(aux_user);
-	free(aux_passwd);
-	
-	
-	
+	/* Si pasa los controles, cambio su clave */
+	if( ret == __CHANGE_OK__ ) {
+		aux_user = CopyString(log.user);
+		aux_passwd = CopyString(log.passwd);
+		/* Llamado a la funcion que cambia la password en el servidor ldap */
+		ChangePasswd(ld, aux_user, aux_passwd);
+		free(aux_user);
+		free(aux_passwd);
+	}
+	/* Mando la respuesta */
+	ack.ret_code = ret;
+	sendTCP(socket, &ack, sizeof(ack_t));
+		
 	return OK;
 }
 
@@ -255,4 +255,26 @@ UsersHash( void *v1, int size )
 	return hash % size;
 }
 
+/* Static Functions */
 
+static boolean 
+UserCanAcces(char *user,char *passwd)
+{
+	int pos;
+	login_t id;
+	login_t *aut;
+	strcpy(id.user, user);
+	strcpy(id.passwd, passwd);
+	
+	/* Control de seguridad del usuario */
+	if( (pos=Lookup(users_online,&id)) == -1 ) {
+		return FALSE;
+	}	
+	/* Control de seguridad del password */	
+	aut = GetHElement(users_online,pos);
+	if( strcmp(aut->passwd,passwd ) != 0 ) {
+		return FALSE;
+	}	
+	
+	return TRUE;
+}

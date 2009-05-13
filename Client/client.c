@@ -100,7 +100,7 @@ UserLogin(char *user, char* passwd)
 }
 
 client_change_passwd_status
-UserChangePasswd(char* old_passwd, char *new_passwd, char *rep_new_passwd)
+UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 {
 	client_change_passwd_status ret;
 	void *to_send;
@@ -131,6 +131,7 @@ UserChangePasswd(char* old_passwd, char *new_passwd, char *rep_new_passwd)
 	
 	/* Me conecto al servidor */
 	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
+		free(to_send);
 		return LOGIN_CONNECT_ERROR;
 	}
 	/* Mando el paquete */
@@ -141,15 +142,22 @@ UserChangePasswd(char* old_passwd, char *new_passwd, char *rep_new_passwd)
 	/* Proceso la respuesta */
 	switch (ack_ptr->ret_code) {
 		case __CHANGE_OK__:
-			return CHANGE_OK;
+			ret = CHANGE_OK;
+			strcpy(log_passwd, new_passwd);
+			break;
+		case __USER_IS_NOT_LOG__:
+			ret = CHANGE_LOG_ERROR;
+			break;
+		case __USER_ACCESS_DENY__:
+			ret = CHANGE_ACCESS_DENY;
+			break;		
 		default:
 			ret = CHANGE_CONNECT_ERROR;
 			break;
 	}
 	free(ack_ptr);
-	/* Cierro la conexion */
+	/* Cierro la conexion???? */
 	close(socket);		
-	
 	
 	return ret;
 }	
