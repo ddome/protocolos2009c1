@@ -36,11 +36,15 @@ LDAP * InitLdap(void);
 
 status ClientAdd(LDAP *ld, client_t client);
 
+status ChangePasswd(LDAP *ld, char *user, char *passwd);
+
 boolean UserExist(LDAP *ld, char *user);
 
 boolean PasswdIsValid(LDAP *ld, char *user, char *passwd);
 
 void EndLdap(LDAP *ld);
+
+
 
 #endif
 

@@ -20,10 +20,17 @@
 
 /* Codigos del pedido (opCode) */
 
+/* Codigos de logueo de usuario */
 #define __USER_LOGIN__             0L
 #define __USER_ERROR__             1L
 #define __PASSWD_ERROR__           2L
 #define __LOGIN_OK__               3L
+#define __USER_IS_LOG__            4L
+
+/* Codigos de cambio de datos */
+#define __NEW_PASSWD__             5L
+#define __CHANGE_OK__			   6L
+#define __USER_IS_NOT_LOG__        7L
 
 /* Estructuras del protocolo de aplicacion */
 
@@ -31,10 +38,12 @@
 typedef struct {
 	unsigned long int opCode;
 	unsigned long int total_objects;
+	char user[MAX_USER_LEN]; /* null para usuarios anonimos */
+	char passwd[MAX_USER_PASS]; /* null para usuarios anonimos */
 } header_t;
 
 /* User Login */
-typedef struct {
+typedef struct login {
 	char user[MAX_USER_LEN];
 	char passwd[MAX_USER_PASS];
 } login_t;

@@ -32,6 +32,12 @@ status UserLogin(login_t log,int socket);
 
 status NewClient(client_t client,int socket);
 
+status UserNewPasswd(login_t log,int socket, char *user,char *passwd); 
+
 /*************************************************************************/
+
+int UsersComp( void *c1, void *c2 );
+
+int UsersHash( void *c1, int size );
 
 #endif

@@ -184,6 +184,33 @@ PasswdIsValid(LDAP *ld, char *user, char *passwd)
 		return FALSE;	
 }
 
+status
+ChangePasswd(LDAP *ld, char *user, char *passwd)
+{
+	LDAPMod *attributes[2];
+	LDAPMod attribute1;
+	
+	char * pass_value[]		  = {passwd,NULL};
+	
+	char *dn = GetClientDN(user);
+	
+	/* userPassword */	
+	attribute1.mod_op = LDAP_MOD_REPLACE;
+	attribute1.mod_type = "userPassword";
+	attribute1.mod_vals.modv_strvals = pass_value;	
+	attributes[0] = &attribute1;
+	
+	attributes[1] = NULL;
+	
+	if ( ldap_modify_s(ld, dn, attributes) != LDAP_SUCCESS ) {
+		fprintf(stderr,"LDAP ERROR: No pudo cambiarse la clave del cliente\n");
+		return ERROR;
+	}
+	
+	//free(dn);
+	
+	return OK;
+}
 void 
 EndLdap(LDAP *ld)
 {
