@@ -147,6 +147,13 @@ int acceptTCP(int socketFD)
 int sendTCP(int socketFD,void * data,size_t size)
 {
 	int ret=0;
+	u_size header_size;
+	
+	header_size = size;
+	
+	/* Mando el tamanio del paquete a levantar */
+	send(socketFD,&header_size,sizeof(u_size),0);
+	
 	if(send(socketFD,data,size,0)==-1);
 	{
 		//Agregar syslog
@@ -165,14 +172,24 @@ int sendTCP(int socketFD,void * data,size_t size)
 	return ret;
 }
 
-void * receiveTCP(int socketFD,size_t size)
+void * receiveTCP(int socketFD)
 {
 	void * ret;
-	if( (ret=calloc(1,size)) == NULL )
+	u_size *header_size;
+	
+	if( (header_size = malloc(sizeof(u_size))) == NULL )
 		return NULL;
 	
-	if(recv(socketFD,ret,size,0)<0)
+	if(recv(socketFD,header_size,sizeof(u_size),0)<0)
 	    return NULL;
+	
+	if( (ret=calloc(1,*header_size)) == NULL )
+		return NULL;
+	
+	if(recv(socketFD,ret,*header_size,0)<0)
+	    return NULL;
+	
+	free(header_size);
 	
 	return ret;
 }

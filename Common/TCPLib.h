@@ -12,6 +12,7 @@
 #include<arpa/inet.h>
 #include<netdb.h>
 
+#include "defines.h"
 
 /*General error*/
 #define GEN_ERROR -1
@@ -62,7 +63,7 @@ int acceptTCP(int socketFD);
 int sendTCP(int socketFD,void * data,size_t size);
 
 /*Es necesario liberar lo q devuelve.*/
-void * receiveTCP(int socketFD,size_t size);
+void * receiveTCP(int socketFD);
 
 /*Cierra una conexion determinada.*/
 void closeTCP(int socketFD);
