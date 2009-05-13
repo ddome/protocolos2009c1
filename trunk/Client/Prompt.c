@@ -88,12 +88,51 @@ static int Login_Command(scannerADT scanner, void * data)
     return retValue;    
 }
 
+static int ChangePassword_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+    char * aux1,*aux2;
+    if(MoreTokensExist(scanner)) {
+		aux1=ReadToken(scanner);
+		aux2=ReadToken(scanner);
+		
+		switch( UserChangePasswd(aux1, aux2) ) {
+			case CHANGE_LOG_ERROR:
+				printf("Debe estar logueado para realizar un cambio de contraseña\n");
+				break;
+			case NEW_PASSWD_INVALID:
+				printf("La clave de seguridad no corresponde con la nueva clave ingresada\n");
+				break;
+			case CHANGE_ERROR:
+				printf("Se produjo un error al intentar cambiar la clave de usuario\n");
+				break;
+			case CHANGE_OK:
+				printf("Se ha cambiado su clave exitosamente\n");
+				break;
+			case CHANGE_ACCESS_DENY:
+				printf("Acceso denegado\n");
+				break;
+			default:
+				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		}
+		
+		free(aux1);
+		free(aux2);
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
+
 
 static int ShowCommands(scannerADT scanner, void * data)
 {
 
     printf("Comandos disponibles:\n");
 	printf("Login user password\n");
+	printf("Password newpassword rep_newpassword\n");
 
     return OK;
 }
@@ -104,6 +143,7 @@ static int ShowCommands(scannerADT scanner, void * data)
 static void LoadTree(treeADT tree)
 {
     InsertExpression(tree, "Login",  Login_Command);
+	InsertExpression(tree, "Password",  ChangePassword_Command);
     InsertExpression(tree, "Help",   ShowCommands);
 }
 
