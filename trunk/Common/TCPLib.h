@@ -69,4 +69,3 @@ void * receiveTCP(int socketFD);
 void closeTCP(int socketFD);
 
 #endif /*TCPLIB_H_*/
-

@@ -52,6 +52,16 @@ static char * ReadLine( FILE * inputFile )
 /* Comandos del Prompt
 */
 
+
+static int Exit_Command(scannerADT scanner, void * data)
+{
+	UserExit();
+	printf("Gracias por utilizar MovieStoreServer\n");
+
+	return _EXIT_;
+}
+
+
 static int Login_Command(scannerADT scanner, void * data)
 {
     int retValue = _COMMAND_OK_;
@@ -96,6 +106,8 @@ static int ChangePassword_Command(scannerADT scanner, void * data)
 		switch( UserChangePasswd(aux1, aux2) ) {
 			case CHANGE_LOG_ERROR:
 				printf("Debe estar logueado para realizar un cambio de contraseña\n");
+				if( strcmp(user, "anonimo") != 0 )
+					strcpy(user, "anonimo");
 				break;
 			case NEW_PASSWD_INVALID:
 				printf("La clave de seguridad no corresponde con la nueva clave ingresada\n");
@@ -167,13 +179,48 @@ static int NewAccount_Command(scannerADT scanner, void * data)
     return retValue;    
 }
 
+static int Logout_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+    if(!MoreTokensExist(scanner)) {
+		
+		switch( UserLogout() ) {
+				
+			case LOG_OUT_ERROR:
+				printf("Se produjo un error al intentar desloguearse\n");
+				break;
+			case LOG_OUT_ACCES_DENY:
+				printf("Acceso denegado\n");
+				break;
+			case LOG_OUT_USER_NOT_LOG:
+				printf("Debe estar logueado para poder desloguearse...\n");
+				if( strcmp(user, "anonimo") != 0 )
+					strcpy(user, "anonimo");
+				break;
+			case LOG_OUT_OK:
+				printf("Se ha deslogueado con exito\n");
+				strcpy(user, "anonimo");
+				break;
+			default:
+				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		}		
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
+
 static int ShowCommands(scannerADT scanner, void * data)
 {
 
     printf("Comandos disponibles:\n");
-	printf("Login user password\n");
-	printf("New user password rep_password mail description level\n");
-	printf("Password newpassword rep_newpassword\n");
+	printf("login user password\n");
+	printf("new user password rep_password mail description level\n");
+	printf("password newpassword rep_newpassword\n");
+	printf("exit\n");
+	printf("logout\n");
 
     return OK;
 }
@@ -183,10 +230,12 @@ static int ShowCommands(scannerADT scanner, void * data)
 
 static void LoadTree(treeADT tree)
 {
-    InsertExpression(tree, "Login",  Login_Command);
-	InsertExpression(tree, "New",  NewAccount_Command);
-	InsertExpression(tree, "Password",  ChangePassword_Command);
-    InsertExpression(tree, "Help",   ShowCommands);
+    InsertExpression(tree, "login",  Login_Command);
+	InsertExpression(tree, "new",  NewAccount_Command);
+	InsertExpression(tree, "password",  ChangePassword_Command);
+	InsertExpression(tree, "logout",  Logout_Command);
+    InsertExpression(tree, "help",   ShowCommands);
+	InsertExpression(tree, "exit",   Exit_Command);
 }
 
 /* Prompt
@@ -205,7 +254,7 @@ Prompt(void)
 	strcpy(user, "anonimo");
     while ( !terminar )
     {
-        printf("%s@client:~ $ ",user);
+        printf("%s@user:~ $ ",user);
         strAux = ReadLine( stdin );
         if(strcmp(strAux, "\n") != 0)
             status = ReadExpression( tree, strAux, NULL );
@@ -214,7 +263,6 @@ Prompt(void)
         if(status < 0 )
             fprintf(stderr, "Comando invalido.\n");
 		if( status == _EXIT_ ) {
-			printf("Gracias por utilizar MovieStoreServer\n");
 			terminar = TRUE;
 		}
         free(strAux);
@@ -222,7 +270,3 @@ Prompt(void)
     FreeTree(tree);
   /*  GoodBye();*/
 }
-	
-
-
-

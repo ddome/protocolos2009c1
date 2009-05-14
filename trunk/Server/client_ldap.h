@@ -47,4 +47,3 @@ void EndLdap(LDAP *ld);
 
 
 #endif
-

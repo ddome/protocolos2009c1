@@ -17,4 +17,3 @@ string CreateString( string copy );
 char* CopyString(char * string);
 
 #endif
-

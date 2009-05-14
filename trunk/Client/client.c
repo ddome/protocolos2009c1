@@ -39,6 +39,14 @@ EndClient(void)
 	return;
 }
 
+void 
+UserExit(void)
+{
+	if( strcmp(log_user, "anonimo") != 0 )
+		UserLogout();
+}
+
+
 client_login_status
 UserLogin(char *user, char* passwd)
 {
@@ -95,15 +103,18 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 	switch (ret_code) {
 		case __CHANGE_OK__:
 			ret = CHANGE_OK;
+			/* Guardo la nueva contreaseña */
 			strcpy(log_passwd, new_passwd);
 			break;
 		case __USER_IS_NOT_LOG__:
 			ret = CHANGE_LOG_ERROR;
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
 			break;
 		case __USER_ACCESS_DENY__:
 			ret = CHANGE_ACCESS_DENY;
 			break;
-		case ERROR:
+		case CONNECT_ERROR:
 			ret = CHANGE_ERROR;
 			break;	
 		default:
@@ -145,7 +156,7 @@ UserRegistration(char *user, char *passwd, char *rep_passwd, char *mail, char *d
 		case __REG_OK__:
 			ret = REG_OK;
 			break;
-		case ERROR:
+		case CONNECT_ERROR:
 			ret = REG_ERROR;
 			break;
 		default:
@@ -155,6 +166,41 @@ UserRegistration(char *user, char *passwd, char *rep_passwd, char *mail, char *d
 	
 	return ret;
 }
+
+client_logout_status
+UserLogout(void)
+{
+	client_user_reg ret = REG_OK;
+	int ret_code;
+			
+	/* Mando el pedido */
+	ret_code = SendRequest(__LOG_OUT__, 1, NULL, 0);
+	/* Proceso la respuesta */
+	switch (ret_code) {
+		case __LOG_OUT_ERROR__:
+			ret = LOG_OUT_ERROR;
+			break;
+		case __USER_ACCESS_DENY__:
+			ret = LOG_OUT_ACCES_DENY;
+			break;
+		case __USER_IS_NOT_LOG__:
+			ret = LOG_OUT_USER_NOT_LOG;
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
+			break;
+		case __LOG_OUT_OK__:
+			strcpy(log_user, "anonimo");
+			strcpy(log_passwd, "anonimo");
+			ret = LOG_OUT_OK;
+			break;
+		default:
+			ret = LOG_OUT_CONNECT_ERROR;
+			break;
+	}
+	
+	return ret;
+}
+
 
 /* Static Functions */
 static unsigned long 
@@ -172,13 +218,14 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 	/* Identificacion del usuario */
 	strcpy(header.user,log_user);
 	strcpy(header.passwd,log_passwd);
-	
+	/* Concateno los paquetes header y pedido */
 	if( (to_send = malloc(sizeof(header_t)+size)) == NULL )
-		return CONNECT_ERROR;
-	
+		return CONNECT_ERROR;	
 	memmove(to_send, &header, sizeof(header_t));
-	memmove(to_send+sizeof(header_t), packet, size);
-	
+	/* Chequeo si realmente se manda un paquete asociado al pedido */
+	if( packet != NULL ) {
+		memmove(to_send+sizeof(header_t), packet, size);
+	}	
 	/* Me conecto al servidor */
 	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
 		free(to_send);
@@ -195,5 +242,3 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 	close(socket);
 	return ret;
 }
-
-

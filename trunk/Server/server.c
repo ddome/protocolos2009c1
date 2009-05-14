@@ -34,6 +34,8 @@ hashADT users_online;
 
 static boolean UserCanAcces(char *user,char *passwd);
 
+static status UserDelete(char *user,char *passwd);
+
 
 status 
 InitServer(void)
@@ -150,15 +152,20 @@ Session(void *packet,int socket)
 		case __NEW_PASSWD__:
 			/* Cambio de clave */
 			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );
-			fprintf(stderr,"Llego un pedido de --new password-- de user:%s passwd:%s\n",header.user,header.passwd);
+			fprintf(stderr,"Llego un pedido de --password-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserNewPasswd(log,socket,header.user,header.passwd);
 			break;
 		case __REG_USER__:
-			/* Cambio de clave */
+			/* Registro de un nuevo usuario */
 			memmove(&client, packet + sizeof(header_t), sizeof(client_t) );
-			fprintf(stderr,"Llego un pedido de --new client-- de user:%s passwd:%s\n",header.user,header.passwd);
+			fprintf(stderr,"Llego un pedido de --new-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserRegister(client,socket);
-			break;			
+			break;
+		case __LOG_OUT__:
+			/* Desconectar usuario */
+			fprintf(stderr,"Llego un pedido de --logout-- de user:%s passwd:%s\n",header.user,header.passwd);
+			return UserLogout(socket, header.user, header.passwd);
+			break;		
 		default:
 			fprintf(stderr, "No se reconocio el op_code:%d\n",header.opCode);
 			return FATAL_ERROR;
@@ -247,13 +254,7 @@ UserRegister(client_t client,int socket)
 	if( UserExist(ld, client.user) )
 		ret = __REG_USER_ERROR__;
 
-	if( ret == __REG_OK__ ) {
-		
-		fprintf(stderr,"user: %s\n", client.user);
-		fprintf(stderr,"pass: %s\n", client.passwd);
-		fprintf(stderr,"mail: %s\n", client.mail);
-		fprintf(stderr,"desc: %s\n", client.desc);
-		
+	if( ret == __REG_OK__ ) {		
 		/* Llamo a la funcion que agrega un cliente a la base ldap */
 		if( ClientAdd(ld,client) == ERROR )
 			ret = __REG_ERROR__;
@@ -264,6 +265,33 @@ UserRegister(client_t client,int socket)
 	
 	return OK;
 }
+
+status
+UserLogout(int socket, char *user, char *passwd)
+{
+	int ret = __LOG_OUT_OK__;
+	ack_t ack;
+	
+	/* Me fijo si esta logueado */
+	if( strcmp(user, "anonimo") == 0 ) {
+		ret = __USER_IS_NOT_LOG__;
+	}
+	/* Control de la identidad del solicitante */
+	else if( !UserCanAcces(user, passwd) ) {
+		ret = __USER_ACCESS_DENY__;
+	}
+	/* Borro al usuario de la lista de usuarios conectados */
+	if( ret == __LOG_OUT_OK__ ) { 
+		if( UserDelete(user,passwd) == ERROR )
+			ret = __LOG_OUT_ERROR__;
+	}	
+	/* Mando la respuesta */
+	ack.ret_code = ret;
+	sendTCP(socket, &ack, sizeof(ack_t));	
+	
+	return OK;
+}
+
 
 /* Funciones del manejo de la tabla de hashing */
 
@@ -314,3 +342,26 @@ UserCanAcces(char *user,char *passwd)
 	
 	return TRUE;
 }
+
+static status
+UserDelete(char *user,char *passwd)
+{
+	int pos;
+	login_t id;
+	login_t *aut;
+	strcpy(id.user, user);
+	strcpy(id.passwd, passwd);
+	/* Busco el elemento previamente para poder liberarlo */
+	if( (pos=Lookup(users_online,&id)) == -1 ) {
+		return ERROR;
+	}	
+	aut = GetHElement(users_online,pos);
+	/* Borro el elemento de la lista de usuarios online */
+	HDelete(users_online, &id);
+	/* Libero el puntero usado */
+	free(aut);
+	return OK;
+}
+
+
+

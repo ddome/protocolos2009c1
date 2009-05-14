@@ -32,7 +32,9 @@ status UserLogin(login_t log,int socket);
 
 status UserRegister(client_t client,int socket);
 
-status UserNewPasswd(login_t log,int socket, char *user,char *passwd); 
+status UserNewPasswd(login_t log,int socket, char *user,char *passwd);
+
+status UserLogout(int socket, char *user, char *passwd);
 
 /*************************************************************************/
 
