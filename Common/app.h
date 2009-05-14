@@ -41,6 +41,11 @@
 #define __REG_ERROR__			  11L
 #define __REG_USER_ERROR__		  12L
 
+/* Codigos de logout */
+#define __LOG_OUT__				  13L
+#define __LOG_OUT_ERROR__		  14L
+#define __LOG_OUT_OK__			  15L
+
 
 /* Estructuras del protocolo de aplicacion */
 

@@ -45,4 +45,3 @@ CopyString(char * string)
     
     return newStr;
 }
-

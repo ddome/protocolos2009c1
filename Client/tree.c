@@ -170,8 +170,3 @@ ReadExpression(treeADT tree, char * expression, void * data)
     FreeScanner(scanner);
     return res;
 }
-
-
-
-
-
