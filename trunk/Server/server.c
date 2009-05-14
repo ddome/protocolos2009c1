@@ -132,8 +132,10 @@ EndServer(void)
 status
 Session(void *packet,int socket)
 {
-	header_t header;
+	header_t header;	
 	login_t log;
+	client_t client;
+	
 	
 	/* Levanto el header del paquete */
 	memmove(&header, packet, sizeof(header));
@@ -151,7 +153,12 @@ Session(void *packet,int socket)
 			fprintf(stderr,"Llego un pedido de --new password-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserNewPasswd(log,socket,header.user,header.passwd);
 			break;
-			
+		case __REG_USER__:
+			/* Cambio de clave */
+			memmove(&client, packet + sizeof(header_t), sizeof(client_t) );
+			fprintf(stderr,"Llego un pedido de --new client-- de user:%s passwd:%s\n",header.user,header.passwd);
+			return UserRegister(client,socket);
+			break;			
 		default:
 			fprintf(stderr, "No se reconocio el op_code:%d\n",header.opCode);
 			return FATAL_ERROR;
@@ -230,6 +237,34 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	return OK;
 }
 
+status
+UserRegister(client_t client,int socket)
+{
+	int ret = __REG_OK__;
+	ack_t ack;
+		
+	/* Llamo a la funcion que pregunta si un nombre de usuario ya existe en la base ldap */
+	if( UserExist(ld, client.user) )
+		ret = __REG_USER_ERROR__;
+
+	if( ret == __REG_OK__ ) {
+		
+		fprintf(stderr,"user: %s\n", client.user);
+		fprintf(stderr,"pass: %s\n", client.passwd);
+		fprintf(stderr,"mail: %s\n", client.mail);
+		fprintf(stderr,"desc: %s\n", client.desc);
+		
+		/* Llamo a la funcion que agrega un cliente a la base ldap */
+		if( ClientAdd(ld,client) == ERROR )
+			ret = __REG_ERROR__;
+	}
+	/* Mando la respuesta */
+	ack.ret_code = ret;
+	sendTCP(socket, &ack, sizeof(ack_t));
+	
+	return OK;
+}
+
 /* Funciones del manejo de la tabla de hashing */
 
 int
@@ -257,6 +292,7 @@ UsersHash( void *v1, int size )
 
 /* Static Functions */
 
+/* Funcion que controla la identificacion de los usuarios */
 static boolean 
 UserCanAcces(char *user,char *passwd)
 {

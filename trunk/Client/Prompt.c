@@ -67,9 +67,6 @@ static int Login_Command(scannerADT scanner, void * data)
 			case LOGIN_PASS_INVALID:
 				printf("La clave es invalida para el usuario solicitado\n");
 				break;
-			case LOGIN_USER_IS_LOG:
-				printf("El usuario %s ya esta logueado\n",aux1);
-				break;
 			case USER_LOGIN_OK:
 				printf("%s, bienvenido a MovieStoreServer\n",aux1);
 				strcpy(user, aux1);
@@ -126,12 +123,56 @@ static int ChangePassword_Command(scannerADT scanner, void * data)
     return retValue;    
 }
 
+static int NewAccount_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+    char * aux1,*aux2,*aux3,*aux4,*aux5,*aux6;
+    if(MoreTokensExist(scanner)) {
+		aux1=ReadToken(scanner);
+		aux2=ReadToken(scanner);
+		aux3=ReadToken(scanner);
+		aux4=ReadToken(scanner);
+		aux5=ReadToken(scanner);
+		aux6=ReadToken(scanner); /* pasar a int */
+		
+		switch( UserRegistration(aux1, aux2, aux3, aux4, aux5, 10) ) {
+				
+			case REG_PASSWD_ERROR:
+				printf("La clave de seguridad debe coincidir con la primer clave ingresada\n");
+				break;
+			case REG_USER_EXISTS:
+				printf("El nombre de usuario no se encuentra disponible\n");
+				break;
+			case REG_ERROR:
+				printf("Se produjo un error al intentar agregar el nuevo usuario\n");
+				break;
+			case REG_OK:
+				printf("Se ha registrado con exito\n");
+				break;
+			default:
+				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		}
+		
+		free(aux1);
+		free(aux2);
+		free(aux3);
+		free(aux4);
+		free(aux5);
+		free(aux6);
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
 
 static int ShowCommands(scannerADT scanner, void * data)
 {
 
     printf("Comandos disponibles:\n");
 	printf("Login user password\n");
+	printf("New user password rep_password mail description level\n");
 	printf("Password newpassword rep_newpassword\n");
 
     return OK;
@@ -143,6 +184,7 @@ static int ShowCommands(scannerADT scanner, void * data)
 static void LoadTree(treeADT tree)
 {
     InsertExpression(tree, "Login",  Login_Command);
+	InsertExpression(tree, "New",  NewAccount_Command);
 	InsertExpression(tree, "Password",  ChangePassword_Command);
     InsertExpression(tree, "Help",   ShowCommands);
 }
