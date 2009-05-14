@@ -35,6 +35,13 @@
 #define __USER_IS_NOT_LOG__        7L
 #define __USER_ACCESS_DENY__	   8L
 
+/* Codigos de registro de usuario */
+#define __REG_USER__			   9L
+#define __REG_OK__				  10L
+#define __REG_ERROR__			  11L
+#define __REG_USER_ERROR__		  12L
+
+
 /* Estructuras del protocolo de aplicacion */
 
 /* Header */

@@ -30,7 +30,7 @@ status Session(void *packet,int socket);
 
 status UserLogin(login_t log,int socket);
 
-status NewClient(client_t client,int socket);
+status UserRegister(client_t client,int socket);
 
 status UserNewPasswd(login_t log,int socket, char *user,char *passwd); 
 
