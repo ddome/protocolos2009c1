@@ -55,6 +55,10 @@ UserLogin(char *user, char* passwd)
 	int ret_code;
 	login_t log;
 	
+	/* Si estaba logueado con otra cuenta, lo deslogueo */
+	if( strcmp(log_user, "anonimo") != 0 )
+		UserLogout();
+	
 	/* Paquete del pedido */
 	strcpy(log.user,user);
 	strcpy(log.passwd,passwd);
@@ -113,6 +117,8 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 			break;
 		case __USER_ACCESS_DENY__:
 			ret = CHANGE_ACCESS_DENY;
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
 			break;
 		case CONNECT_ERROR:
 			ret = CHANGE_ERROR;

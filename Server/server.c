@@ -199,7 +199,8 @@ UserLogin(login_t log,int socket)
 			if( (log_ptr = malloc(sizeof(login_t))) == NULL )
 				return FATAL_ERROR;
 			*log_ptr = log;
-			HInsert(users_online, log_ptr);
+			if( HInsert(users_online, log_ptr) == 0 )
+				return FATAL_ERROR;
 		}
 		else
 			ret = __USER_IS_LOG__;
@@ -218,6 +219,7 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	char *aux_passwd;
 	int ret = __CHANGE_OK__;
 	ack_t ack;
+	login_t *log_ptr;
 
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
@@ -236,6 +238,13 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 		ChangePasswd(ld, aux_user, aux_passwd);
 		free(aux_user);
 		free(aux_passwd);
+		/* Borro e inserto el usuario con la nueva password en login_users */
+		UserDelete(user, passwd);
+		if( (log_ptr = malloc(sizeof(login_t))) == NULL )
+			return FATAL_ERROR;
+		*log_ptr = log;
+		if( HInsert(users_online, log_ptr) == 0 )
+			return FATAL_ERROR;		
 	}
 	/* Mando la respuesta */
 	ack.ret_code = ret;

@@ -119,7 +119,9 @@ static int ChangePassword_Command(scannerADT scanner, void * data)
 				printf("Se ha cambiado su clave exitosamente\n");
 				break;
 			case CHANGE_ACCESS_DENY:
-				printf("Acceso denegado\n");
+				printf("El usuario ha sido deslogueado desde otra terminal\n");
+				if( strcmp(user, "anonimo") != 0 )
+					strcpy(user, "anonimo");
 				break;
 			default:
 				printf("Se ha producido un error al intentar conectarse al servidor\n");
@@ -190,7 +192,9 @@ static int Logout_Command(scannerADT scanner, void * data)
 				printf("Se produjo un error al intentar desloguearse\n");
 				break;
 			case LOG_OUT_ACCES_DENY:
-				printf("Acceso denegado\n");
+				printf("El usuario ha sido deslogueado desde otra terminal\n");
+				if( strcmp(user, "anonimo") != 0 )
+					strcpy(user, "anonimo");
 				break;
 			case LOG_OUT_USER_NOT_LOG:
 				printf("Debe estar logueado para poder desloguearse...\n");
