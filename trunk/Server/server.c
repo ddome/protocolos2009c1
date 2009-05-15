@@ -19,7 +19,7 @@
 #include "server.h"
 #include "../Common/TCPLib.h"
 #include "hashADT.h"
-
+#include "../Common/des/include/encrypt.h"
 
 /* Variable global que guarda la coneccion con el servidor LDAP */
 LDAP *ld;
@@ -220,7 +220,8 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	int ret = __CHANGE_OK__;
 	ack_t ack;
 	login_t *log_ptr;
-
+	char *des_passwd;
+	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
 		ret = __USER_IS_NOT_LOG__;
@@ -231,15 +232,22 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	}
 	
 	/* Si pasa los controles, cambio su clave */
-	if( ret == __CHANGE_OK__ ) {
+	if( ret == __CHANGE_OK__ ) {		
+		/* Desencripto la nueva clave */
+		des_passwd = malloc(strlen(log.passwd)+1);
+		des_decipher(log.passwd, des_passwd, passwd);
+		fprintf(stderr, "--%s--\n",des_passwd);
+		strcpy(log.passwd,des_passwd);
 		aux_user = CopyString(log.user);
 		aux_passwd = CopyString(log.passwd);
 		/* Llamado a la funcion que cambia la password en el servidor ldap */
 		ChangePasswd(ld, aux_user, aux_passwd);
 		free(aux_user);
 		free(aux_passwd);
+		free(des_passwd);
 		/* Borro e inserto el usuario con la nueva password en login_users */
 		UserDelete(user, passwd);
+		fprintf(stderr, "--%s--\n",log.passwd);
 		if( (log_ptr = malloc(sizeof(login_t))) == NULL )
 			return FATAL_ERROR;
 		*log_ptr = log;

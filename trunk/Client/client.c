@@ -9,6 +9,7 @@
 
 #include "client.h"
 #include "Prompt.h"
+#include "../Common/des/include/encrypt.h"
 
 char log_user[MAX_USER_LEN];
 char log_passwd[MAX_USER_PASS];
@@ -93,13 +94,17 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 	client_change_passwd_status ret;
 	login_t new_client_info;
 	int ret_code;
+	char* sec_new_passwd;
 	
 	/* Chequeo que ingrese la confirmacion de la clave correctamente */
 	if( strcmp(new_passwd, rep_new_passwd) != 0 )
 		return NEW_PASSWD_INVALID;
-
+	/* Encripto la nueva clave */
+	if( (sec_new_passwd=malloc(strlen(new_passwd)+1)) == NULL )
+		return CHANGE_ERROR;
+	des_encipher(new_passwd,sec_new_passwd,log_passwd);
 	/* Paquete de pedido */
-	strcpy(new_client_info.passwd,new_passwd);
+	strcpy(new_client_info.passwd,sec_new_passwd);
 	strcpy(new_client_info.user,log_user);
 	/* Mando el pedido */
 	ret_code = SendRequest(	__NEW_PASSWD__, 1, &new_client_info, sizeof(login_t));	
@@ -112,11 +117,13 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 			break;
 		case __USER_IS_NOT_LOG__:
 			ret = CHANGE_LOG_ERROR;
+			/* El usuario debe loguearse devuelta */
 			if( strcmp(log_user, "anonimo") != 0 )
 				strcpy(log_user, "anonimo");
 			break;
 		case __USER_ACCESS_DENY__:
 			ret = CHANGE_ACCESS_DENY;
+			/* El usuario debe loguearse devuelta */
 			if( strcmp(log_user, "anonimo") != 0 )
 				strcpy(log_user, "anonimo");
 			break;
@@ -191,6 +198,7 @@ UserLogout(void)
 			break;
 		case __USER_IS_NOT_LOG__:
 			ret = LOG_OUT_USER_NOT_LOG;
+			/* El usuario debe loguearse devuelta */
 			if( strcmp(log_user, "anonimo") != 0 )
 				strcpy(log_user, "anonimo");
 			break;
