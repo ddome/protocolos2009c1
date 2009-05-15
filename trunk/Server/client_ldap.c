@@ -51,6 +51,8 @@ InitLdap(void)
 	return ld;
 }
 
+/* Manejo de usuarios */
+
 status 
 ClientAdd(LDAP *ld, client_t client)
 {
@@ -211,6 +213,15 @@ ChangePasswd(LDAP *ld, char *user, char *passwd)
 	
 	return OK;
 }
+
+/* Manejo de peliculas */
+
+movie_t *
+GetMoviesList(LDAP *ld, char *gen)
+{
+	
+}
+
 void 
 EndLdap(LDAP *ld)
 {
@@ -354,6 +365,9 @@ ClientsInit(LDAP *ld)
 		return FATAL_ERROR;
 	}
 	
-	
 	return OK;			
-}	
+}
+
+
+
+
