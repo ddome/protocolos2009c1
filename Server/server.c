@@ -105,7 +105,7 @@ StartServer(void)
 								
 				packet=receiveTCP(fd);
 				/* Proceso el packet */
-				if( Session(packet,fd) == OK ) {
+				if( Session(packet,fd) != FATAL_ERROR ) {
 					close(fd); // Tengo que cerrar la conexion?
 					FD_CLR(fd, &afds);
 				}
@@ -168,7 +168,7 @@ Session(void *packet,int socket)
 			break;		
 		default:
 			fprintf(stderr, "No se reconocio el op_code:%d\n",header.opCode);
-			return FATAL_ERROR;
+			return ERROR;
 			break;
 	}
 	

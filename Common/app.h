@@ -8,43 +8,43 @@
 
 #include "defines.h"
 
-#define MAX_USER_LEN  50
-#define MAX_USER_PASS 50
-#define MAX_USER_DESC 300
-#define MAX_USER_MAIL 50
+#define MAX_USER_LEN	50
+#define MAX_USER_PASS	50
+#define MAX_USER_DESC	300
+#define MAX_USER_MAIL	50
 
-#define MAX_MOVIE_LEN 50
-#define MAX_MOVIE_GEN 50
-#define MAX_MOVIE_PLOT 300
-#define M_SIZE 50
+#define MAX_MOVIE_LEN	50
+#define MAX_MOVIE_GEN	50
+#define MAX_MOVIE_PLOT	300
+#define M_SIZE			50
 
 /* Codigos del pedido (opCode) */
 
 /* Codigos de logueo de usuario */
-#define __USER_LOGIN__             0L
-#define __USER_ERROR__             1L
-#define __PASSWD_ERROR__           2L
-#define __LOGIN_OK__               3L
-#define __USER_IS_LOG__            4L
+#define __USER_LOGIN__			0L
+#define __USER_ERROR__			1L
+#define __PASSWD_ERROR__			2L
+#define __LOGIN_OK__				3L
+#define __USER_IS_LOG__			4L
 
 /* Codigos de cambio de datos */
-#define __NEW_PASSWD__             5L
-#define __CHANGE_OK__			   6L
+#define __NEW_PASSWD__			5L
+#define __CHANGE_OK__			6L
 
 /* Codigos de seguridad */
-#define __USER_IS_NOT_LOG__        7L
-#define __USER_ACCESS_DENY__	   8L
+#define __USER_IS_NOT_LOG__		7L
+#define __USER_ACCESS_DENY__		8L
 
 /* Codigos de registro de usuario */
-#define __REG_USER__			   9L
-#define __REG_OK__				  10L
-#define __REG_ERROR__			  11L
-#define __REG_USER_ERROR__		  12L
+#define __REG_USER__				9L
+#define __REG_OK__				10L
+#define __REG_ERROR__			11L
+#define __REG_USER_ERROR__		12L
 
 /* Codigos de logout */
-#define __LOG_OUT__				  13L
-#define __LOG_OUT_ERROR__		  14L
-#define __LOG_OUT_OK__			  15L
+#define __LOG_OUT__				13L
+#define __LOG_OUT_ERROR__		14L
+#define __LOG_OUT_OK__			15L
 
 
 /* Estructuras del protocolo de aplicacion */
