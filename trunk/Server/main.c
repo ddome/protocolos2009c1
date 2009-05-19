@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "../Common/defines.h"
 #include "server.h"
+#include "../Common/debug.h"
 
 int main (int argc, const char * argv[]) {
 	

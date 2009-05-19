@@ -20,6 +20,7 @@
 #include "../Common/TCPLib.h"
 #include "hashADT.h"
 #include "../Common/des/include/encrypt.h"
+#include "../Common/fileHandler.h"
 
 /* Variable global que guarda la coneccion con el servidor LDAP */
 LDAP *ld;
@@ -36,6 +37,7 @@ static boolean UserCanAcces(char *user,char *passwd);
 
 static status UserDelete(char *user,char *passwd);
 
+static status SendMovie(char *path,char *ip,char *port);
 
 status 
 InitServer(void)
@@ -137,6 +139,8 @@ Session(void *packet,int socket)
 	header_t header;	
 	login_t log;
 	client_t client;
+	request_t req;
+	download_start_t start;
 	
 	
 	/* Levanto el header del paquete */
@@ -161,6 +165,18 @@ Session(void *packet,int socket)
 			fprintf(stderr,"Llego un pedido de --new-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserRegister(client,socket);
 			break;
+		case __DOWNLOAD__:
+			/* Descargar pelicula */
+			fprintf(stderr,"Llego un pedido de --download-- de user:%s passwd:%s\n",header.user,header.passwd);
+			memmove(&req, packet + sizeof(header_t), sizeof(request_t) );	
+			return UserDownload(req,socket, header.user, header.passwd);
+			break;
+		case __DOWNLOAD_START_OK__:
+			/* Descargar pelicula */
+			fprintf(stderr,"Llego un pedido de --startdownload-- de user:%s passwd:%s\n",header.user,header.passwd);
+			memmove(&start, packet + sizeof(header_t), sizeof(download_start_t) );	
+			return UserStartDownload(start,socket,header.user,header.passwd);
+			break;	
 		case __LOG_OUT__:
 			/* Desconectar usuario */
 			fprintf(stderr,"Llego un pedido de --logout-- de user:%s passwd:%s\n",header.user,header.passwd);
@@ -284,6 +300,73 @@ UserRegister(client_t client,int socket)
 }
 
 status
+UserDownload(request_t req,int socket,char *user,char *passwd)
+{
+	int ret = __DOWNLOAD_START__;
+	download_header_t ack;
+	file_info_t file_info;
+	
+	/* Me fijo si esta logueado */
+	if( strcmp(user, "anonimo") == 0 ) {
+		ret = __USER_IS_NOT_LOG__;
+	}
+	/* Control de la identidad del solicitante */
+	else if( !UserCanAcces(user, passwd) ) {
+		ret = __USER_ACCESS_DENY__;
+	}
+	/* Busco la informacion del archivo, verifico permisos y nivel de descarga */
+	if( ret == __DOWNLOAD_START__ ) {
+		/*if( GetMovieInfo(req.ticket,&file_info) == -1 ) {
+			ret = __DOWNLOAD_ERROR__;
+		}
+		strcpy(ack.title,file_info.movie.name);
+		ack.size = file_info.movie.size;
+		 */
+		strcpy(ack.title,"SpiderMan");
+		ack.size = GetFileSize("test");
+	}
+	/* Mando la respuesta */
+	ack.ret_code = ret;
+	sendTCP(socket, &ack, sizeof(download_header_t));
+
+	return OK;
+}
+
+status
+UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
+{		
+	file_info_t file_info;
+	
+	/* Me fijo si esta logueado */
+	if( strcmp(user, "anonimo") == 0 ) {
+		return OK;
+	}
+	/* Control de la identidad del solicitante */
+	else if( !UserCanAcces(user, passwd) ) {
+		return OK;
+	}
+	/* Busco la informacion del archivo, verifico permisos y nivel de descarga */
+	/*if( GetMovieInfo(req.ticket,&file_info) == -1 ) {
+		return OK;
+	}*/
+	
+	switch( fork() ) {
+		case 0:
+			/*SendMovie(file_info.path,start.ip,start.port);*/
+			sleep(2);
+			SendMovie("test",start.ip,start.port);
+			exit(EXIT_SUCCESS);
+			break;
+		case -1:
+			return ERROR;
+			break;
+		default:
+			return OK;
+			break;
+	}
+}
+
+status
 UserLogout(int socket, char *user, char *passwd)
 {
 	int ret = __LOG_OUT_OK__;
@@ -301,10 +384,10 @@ UserLogout(int socket, char *user, char *passwd)
 	if( ret == __LOG_OUT_OK__ ) { 
 		if( UserDelete(user,passwd) == ERROR )
 			ret = __LOG_OUT_ERROR__;
-	}	
+	}       
 	/* Mando la respuesta */
 	ack.ret_code = ret;
-	sendTCP(socket, &ack, sizeof(ack_t));	
+	sendTCP(socket, &ack, sizeof(ack_t));   
 	
 	return OK;
 }
@@ -380,5 +463,40 @@ UserDelete(char *user,char *passwd)
 	return OK;
 }
 
-
+static status
+SendMovie(char *path,char *ip,char *port)
+{
+	download_t header;
+	void *data;
+	u_size total_packets;
+	u_size bytes_read;
+	int socket;
+	FILE *fd;
+	void *to_send;
+	
+	/* Me conecto al cliente */
+	if( (socket=connectTCP(ip,port)) < 0 ){
+		return ERROR;
+	}
+	total_packets = SplitFile(path,_FILE_SIZE_);
+	/* Mando los paquetes */
+	int i;
+	header.total_packets = total_packets;
+	fd = fopen(path,"rb");
+	for(i=0;i<total_packets;i++) {
+		bytes_read = GetFileData(fd,_FILE_SIZE_,i,&data);
+		header.size = bytes_read;
+		header.n_packet = i;
+		to_send = malloc(sizeof(download_t)+bytes_read);
+		memmove(to_send, &header, sizeof(download_t));
+		memmove(to_send+sizeof(download_t), data, bytes_read);
+		sendTCP(socket, to_send,bytes_read+sizeof(download_t));
+		free(data);
+		free(to_send);
+	}
+	
+	close(socket);
+	fprintf(stderr,"Termine de transmitir\n");
+	return OK;
+}
 

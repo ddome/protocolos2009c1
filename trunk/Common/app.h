@@ -18,6 +18,10 @@
 #define MAX_MOVIE_PLOT	300
 #define M_SIZE			50
 
+#define MAX_PATH_LEN     50
+
+#define _FILE_SIZE_ 1500
+
 /* Codigos del pedido (opCode) */
 
 /* Codigos de logueo de usuario */
@@ -46,6 +50,11 @@
 #define __LOG_OUT_ERROR__		14L
 #define __LOG_OUT_OK__			15L
 
+/* Codigos de descarga */		
+#define __DOWNLOAD__				16L
+#define __DOWNLOAD_START__		17L
+#define __DOWNLOAD_ERROR__		18L
+#define __DOWNLOAD_START_OK__	19L
 
 /* Estructuras del protocolo de aplicacion */
 
@@ -84,6 +93,23 @@ typedef struct {
 } movie_t;
 
 /* Descarga */
+typedef struct {
+	char ticket[20];
+} request_t;
+
+typedef struct {
+	char ip[50];
+	char port[10];
+} download_start_t;
+
+typedef struct {
+	int ret_code;
+	char title[MAX_MOVIE_LEN];
+	char path[MAX_PATH_LEN];
+	unsigned long total_packets;
+	u_size size;
+} download_header_t;
+
 typedef struct {
 	unsigned long n_packet;
 	unsigned long total_packets;

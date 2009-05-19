@@ -10,13 +10,22 @@
 #include "client.h"
 #include "Prompt.h"
 #include "../Common/des/include/encrypt.h"
+#include "../Common/fileHandler.h"
 
 char log_user[MAX_USER_LEN];
 char log_passwd[MAX_USER_PASS];
 
 /* Static Functions */
 
-static unsigned long SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size); 
+static unsigned long SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size);
+
+static download_header_t SendDownloadRequest(void *packet, u_size size);
+
+static status StartDownload(FILE *fd);
+
+static status ListenMovie(FILE *fd,char *port);
+
+static status ProcessDownload(void *packet);
 
 status 
 InitClient(void)
@@ -183,7 +192,7 @@ UserRegistration(char *user, char *passwd, char *rep_passwd, char *mail, char *d
 client_logout_status
 UserLogout(void)
 {
-	client_user_reg ret = REG_OK;
+	client_logout_status ret = LOG_OUT_OK;
 	int ret_code;
 			
 	/* Mando el pedido */
@@ -195,6 +204,9 @@ UserLogout(void)
 			break;
 		case __USER_ACCESS_DENY__:
 			ret = LOG_OUT_ACCES_DENY;
+			/* El usuario debe loguearse devuelta */
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
 			break;
 		case __USER_IS_NOT_LOG__:
 			ret = LOG_OUT_USER_NOT_LOG;
@@ -209,6 +221,49 @@ UserLogout(void)
 			break;
 		default:
 			ret = LOG_OUT_CONNECT_ERROR;
+			break;
+	}
+	
+	return ret;
+}
+
+client_download_status
+UserDownload(char * ticket)
+{
+	client_download_status ret = DOWNLOAD_OK;
+	request_t request;
+	download_header_t download_info;
+	FILE *fd;
+	
+	strcpy(request.ticket,ticket);
+	/* Mando el pedido */
+	download_info = SendDownloadRequest(&request, sizeof(request_t));
+	/* Proceso la respuesta */
+	switch (download_info.ret_code) {
+		case __DOWNLOAD_ERROR__:
+			ret = DOWNLOAD_ERROR;
+			break;
+		case __USER_ACCESS_DENY__:
+			ret = DOWNLOAD_USER_NOT_LOG;
+			/* El usuario debe loguearse devuelta */
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
+			break;
+		case __USER_IS_NOT_LOG__:
+			ret = DOWNLOAD_USER_NOT_LOG;
+			/* El usuario debe loguearse devuelta */
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
+			break;
+		case __DOWNLOAD_START__:
+			ret = DOWNLOAD_OK;
+			fd = CreateFile(download_info.title,download_info.size);
+			printf("Se comenzara a bajar %s\n",download_info.title);
+			if( StartDownload(fd) == ERROR )
+				ret = DOWNLOAD_ERROR;
+			break;
+		default:
+			ret = DOWNLOAD_CONNECT_ERROR;
 			break;
 	}
 	
@@ -255,4 +310,137 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 	/* Cierro la conexion????? */
 	close(socket);
 	return ret;
+}
+
+static download_header_t
+SendDownloadRequest(void *packet, u_size size)
+{
+	header_t header;
+	void *to_send;
+	int socket;
+	download_header_t download_info,*download_info_ptr;
+	
+	download_info.ret_code = CONNECT_ERROR;
+	
+	/* Tipo de pedido */
+	header.opCode = __DOWNLOAD__;
+	header.total_objects = 1;
+	/* Identificacion del usuario */
+	strcpy(header.user,log_user);
+	strcpy(header.passwd,log_passwd);
+	/* Concateno los paquetes header y pedido */
+	if( (to_send = malloc(sizeof(header_t)+size)) == NULL )
+		return download_info;	
+	memmove(to_send, &header, sizeof(header_t));
+	/* Me conecto al servidor */
+	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
+		free(to_send);
+		return download_info;
+	}
+	/* Mando el paquete */
+	sendTCP(socket, to_send,sizeof(header_t)+size);
+	free(to_send);
+	/* Espero por la respuesta del servidor */
+	download_info_ptr = receiveTCP(socket);	
+	download_info = *download_info_ptr;
+	free(download_info_ptr);
+	/* Cierro la conexion????? */
+	close(socket);
+	return download_info;
+	
+}
+
+static status
+SendSignal(u_size op_code, void *packet, u_size size)
+{
+	header_t header;
+	void *to_send;
+	int socket;
+	
+	/* Tipo de senial */
+	header.opCode = op_code;
+	header.total_objects = 1;
+	/* Identificacion del usuario */
+	strcpy(header.user,log_user);
+	strcpy(header.passwd,log_passwd);
+	/* Concateno los paquetes header y pedido */
+	if( (to_send = malloc(sizeof(header_t)+size)) == NULL )
+		return ERROR;	
+	memmove(to_send, &header, sizeof(header_t));
+	memmove(to_send + sizeof(header_t),packet,size);
+	/* Me conecto al servidor */
+	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
+		free(to_send);
+		return ERROR;
+	}
+	/* Mando el paquete */
+	sendTCP(socket, to_send,sizeof(header_t)+size);
+	free(to_send);
+	
+	close(socket);
+	return OK;
+	
+}
+
+static status
+ListenMovie(FILE *fd,char *port)
+{
+	int passive_s,ssock;
+	unsigned long total_packets;
+	unsigned long n_packet;
+	boolean exit;
+	download_t header;
+	download_start_t start;
+	void *packet;
+	
+	if( (passive_s=prepareTCP("127.0.0.1",port,prepareServer)) < 0 ) {
+		return FATAL_ERROR;
+	}	
+	if( (listenTCP(passive_s,10)) < 0 ) {
+		return FATAL_ERROR;
+	}
+	
+	strcpy(start.port,"1050");
+	strcpy(start.ip,"127.0.0.1");
+	if( SendSignal(__DOWNLOAD_START_OK__, &start, sizeof(download_start_t)) == ERROR )
+		return ERROR;
+	
+	exit = FALSE;
+	n_packet = 0;
+	ssock=acceptTCP(passive_s);
+	while (!exit) {
+		packet = receiveTCP(ssock);
+		memmove(&header, packet, sizeof(download_t));	
+		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+sizeof(download_t),header.size);
+		total_packets = header.total_packets;
+		free(packet);
+		
+		n_packet++;
+		if( n_packet >= total_packets )
+			exit = TRUE;
+	}
+	closeTCP(ssock);
+	closeTCP(passive_s);
+	
+	return OK;
+}
+
+static status 
+StartDownload(FILE *fd)
+{	
+	switch( fork() ) {
+		case 0:			
+			if( (ListenMovie(fd,"1050")) != OK ) {
+			   exit(EXIT_FAILURE);
+			}
+			fclose(fd);
+			exit(EXIT_SUCCESS);
+			break;
+		case -1:
+			return ERROR;
+			break;
+		default:
+			return OK;
+			break;
+	}
 }

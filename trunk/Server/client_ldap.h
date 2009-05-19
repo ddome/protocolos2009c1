@@ -25,6 +25,10 @@
 #define CLIENT_KEY "uid"
 #define CLIENT_PATH "ou=clients,o=movie_store.com"
 
+/* Movies */
+#define MOVIE_KEY "uid"
+#define MOVIE_PATH "ou=movies,o=movie_store.com"
+
 /* Datos del servidor */
 #define MOVIE_STORE_DN   "o=movie_store.com"
 #define MOVIE_STORE_NAME "movie_store.com"
@@ -43,7 +47,5 @@ boolean UserExist(LDAP *ld, char *user);
 boolean PasswdIsValid(LDAP *ld, char *user, char *passwd);
 
 void EndLdap(LDAP *ld);
-
-
 
 #endif

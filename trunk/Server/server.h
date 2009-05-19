@@ -9,6 +9,11 @@
 #include "../Common/defines.h"
 #include "../Common/app.h"
 
+typedef struct{
+	movie_t movie;
+	char path[MAX_PATH_LEN];	
+} file_info_t;
+
 
 /*************************************************************************/
 /*					     Manejo del servidor        				     */
@@ -35,6 +40,10 @@ status UserRegister(client_t client,int socket);
 status UserNewPasswd(login_t log,int socket, char *user,char *passwd);
 
 status UserLogout(int socket, char *user, char *passwd);
+
+status UserDownload(request_t req,int socket,char *user,char *passwd);
+
+status UserStartDownload(download_start_t start,int socket, char *user, char *passwd);
 
 /*************************************************************************/
 

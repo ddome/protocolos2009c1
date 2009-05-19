@@ -216,6 +216,40 @@ static int Logout_Command(scannerADT scanner, void * data)
     return retValue;    
 }
 
+static int Download_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+    char * aux1;
+    if(MoreTokensExist(scanner)) {
+		aux1=ReadToken(scanner);
+		
+		switch( UserDownload(aux1) ) {
+				
+			case DOWNLOAD_ERROR:
+				printf("Se produjo un error al intentar descargar la pelicula\n");
+				break;
+			case DOWNLOAD_OK:
+				printf("Se comenzo a descargar correctamente\n");
+				break;
+			case DOWNLOAD_USER_NOT_LOG:
+				printf("Debe estar logueado para realizar descargas\n");
+				if( strcmp(user, "anonimo") != 0 )
+					strcpy(user, "anonimo");
+				break;
+				
+			default:
+				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		}	
+		free(aux1);
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
+
+
 static int ShowCommands(scannerADT scanner, void * data)
 {
 
@@ -223,6 +257,7 @@ static int ShowCommands(scannerADT scanner, void * data)
 	printf("login user password\n");
 	printf("new user password rep_password mail description level\n");
 	printf("password newpassword rep_newpassword\n");
+	printf("download ticket\n");
 	printf("exit\n");
 	printf("logout\n");
 
@@ -237,6 +272,7 @@ static void LoadTree(treeADT tree)
     InsertExpression(tree, "login",  Login_Command);
 	InsertExpression(tree, "new",  NewAccount_Command);
 	InsertExpression(tree, "password",  ChangePassword_Command);
+	InsertExpression(tree, "download",  Download_Command);
 	InsertExpression(tree, "logout",  Logout_Command);
     InsertExpression(tree, "help",   ShowCommands);
 	InsertExpression(tree, "exit",   Exit_Command);
