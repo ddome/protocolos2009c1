@@ -25,6 +25,8 @@ typedef enum client_user_reg { REG_PASSWD_ERROR=-4, REG_USER_EXISTS=-3,REG_CONNE
 
 typedef enum client_logout_status { LOG_OUT_CONNECT_ERROR=-4, LOG_OUT_USER_NOT_LOG=-3,LOG_OUT_ACCES_DENY=-2,LOG_OUT_ERROR=-1,LOG_OUT_OK=1 } client_logout_status;
 
+typedef enum client_download_status { DOWNLOAD_CONNECT_ERROR=-4, DOWNLOAD_USER_NOT_LOG=-3,DOWNLOAD_ACCES_DENY=-2,DOWNLOAD_ERROR=-1,DOWNLOAD_OK=1 } client_download_status;
+
 
 status InitClient(void);
 status StartClient(void);
@@ -37,6 +39,8 @@ client_change_passwd_status UserChangePasswd(char *new_passwd, char *rep_new_pas
 client_user_reg UserRegistration(char *user, char *passwd, char *rep_passwd, char *mail, char *desc, int level);
 
 client_logout_status UserLogout(void);
+
+client_download_status UserDownload(char * ticket);
 
 void UserExit(void);
 
