@@ -24,12 +24,17 @@ LDAP *
 InitLdap(void)
 {
 	LDAP *ld;
+	int version;
 	
 	/* Conectarse al servidor */
 	ld = ldap_open(HOST,PORT);
 	if( ld == NULL ){
 		fprintf(stderr,"InitLdap ERROR: No pudo establecerce una coneccion con el servidor LDAP en el host %s:%d\n",HOST,PORT);
 	}
+	
+	/* Seteo a la version 3 */
+	version = LDAP_VERSION3;
+	ldap_set_option( ld, LDAP_OPT_PROTOCOL_VERSION, &version );
 	
 	/* Se identifica al usuario root */
 	if( ldap_bind_s(ld,ADMIN_DN,ADMIN_PASSWD,LDAP_AUTH_SIMPLE) != LDAP_SUCCESS ){

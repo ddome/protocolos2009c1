@@ -9,11 +9,15 @@
 #include "../Common/defines.h"
 #include "../Common/app.h"
 
+
+#define HOST_DOWNLOAD "127.0.0.1"
+
+#define PORT_SERVER   "1044"
+
 typedef struct{
 	movie_t movie;
 	char path[MAX_PATH_LEN];	
 } file_info_t;
-
 
 /*************************************************************************/
 /*					     Manejo del servidor        				     */

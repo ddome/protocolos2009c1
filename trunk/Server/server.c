@@ -52,7 +52,7 @@ InitServer(void)
 		
 	/* Iniciar TCP */
 	
-	if( (passive_s=prepareTCP("127.0.0.1","1044",prepareServer)) < 0 ) {
+	if( (passive_s=prepareTCP(HOST_DOWNLOAD,PORT_SERVER,prepareServer)) < 0 ) {
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",passive_s);
 		return FATAL_ERROR;
 	}	
@@ -353,9 +353,13 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 	switch( fork() ) {
 		case 0:
 			/*SendMovie(file_info.path,start.ip,start.port);*/
+			
+			/* Espero a que se establezca la conexion */
 			sleep(2);
-			SendMovie("test",start.ip,start.port);
-			exit(EXIT_SUCCESS);
+			if( SendMovie("test",start.ip,start.port) != OK )
+				exit(EXIT_FAILURE);
+			else
+				exit(EXIT_SUCCESS);
 			break;
 		case -1:
 			return ERROR;
@@ -496,6 +500,7 @@ SendMovie(char *path,char *ip,char *port)
 	}
 	
 	close(socket);
+	fclose(fd);
 	fprintf(stderr,"Termine de transmitir\n");
 	return OK;
 }
