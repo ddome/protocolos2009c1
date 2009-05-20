@@ -257,9 +257,11 @@ UserDownload(char * ticket)
 			break;
 		case __DOWNLOAD_START__:
 			ret = DOWNLOAD_OK;
-			fd = CreateFile(download_info.title,download_info.size);
-			printf("Se comenzara a bajar %s\n",download_info.title);
-			if( StartDownload(fd) == ERROR )
+			/* Reservo espacio en el disco local para el archivo que voy a bajar */
+			if( (fd = CreateFile(download_info.title,download_info.size)) == NULL )
+				ret = DOWNLOAD_ERROR;
+			/* Comienzo a descargar */
+			else if( StartDownload(fd) == ERROR )
 				ret = DOWNLOAD_ERROR;
 			break;
 		default:
@@ -296,7 +298,7 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 		memmove(to_send+sizeof(header_t), packet, size);
 	}	
 	/* Me conecto al servidor */
-	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
+	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
 		free(to_send);
 		return CONNECT_ERROR;
 	}
@@ -333,7 +335,7 @@ SendDownloadRequest(void *packet, u_size size)
 		return download_info;	
 	memmove(to_send, &header, sizeof(header_t));
 	/* Me conecto al servidor */
-	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
+	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
 		free(to_send);
 		return download_info;
 	}
@@ -369,7 +371,7 @@ SendSignal(u_size op_code, void *packet, u_size size)
 	memmove(to_send, &header, sizeof(header_t));
 	memmove(to_send + sizeof(header_t),packet,size);
 	/* Me conecto al servidor */
-	if( (socket=connectTCP("127.0.0.1","1044")) < 0 ){
+	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
 		free(to_send);
 		return ERROR;
 	}
@@ -378,8 +380,7 @@ SendSignal(u_size op_code, void *packet, u_size size)
 	free(to_send);
 	
 	close(socket);
-	return OK;
-	
+	return OK;	
 }
 
 static status
@@ -393,15 +394,17 @@ ListenMovie(FILE *fd,char *port)
 	download_start_t start;
 	void *packet;
 	
-	if( (passive_s=prepareTCP("127.0.0.1",port,prepareServer)) < 0 ) {
+	/* Preparo el puerto que va a escuchar la conexion */
+	if( (passive_s=prepareTCP(HOST_DOWNLOAD,port,prepareServer)) < 0 ) {
 		return FATAL_ERROR;
 	}	
 	if( (listenTCP(passive_s,10)) < 0 ) {
 		return FATAL_ERROR;
 	}
 	
-	strcpy(start.port,"1050");
-	strcpy(start.ip,"127.0.0.1");
+	/* Mando la senial al server pidiendo el inicio de la descarga */
+	strcpy(start.port,port);
+	strcpy(start.ip,HOST_DOWNLOAD);
 	if( SendSignal(__DOWNLOAD_START_OK__, &start, sizeof(download_start_t)) == ERROR )
 		return ERROR;
 	
@@ -409,13 +412,16 @@ ListenMovie(FILE *fd,char *port)
 	n_packet = 0;
 	ssock=acceptTCP(passive_s);
 	while (!exit) {
+		/* Recibo un paquete */
 		packet = receiveTCP(ssock);
 		memmove(&header, packet, sizeof(download_t));	
+		/* Lo bajo a disco */
 		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+sizeof(download_t),header.size);
+		/* Verifico la cantidad total de paquetes a descargar */
 		total_packets = header.total_packets;
 		free(packet);
-		
 		n_packet++;
+		/* Me fijo si llego a la cantidad total de paquetes bajados */
 		if( n_packet >= total_packets )
 			exit = TRUE;
 	}
@@ -428,8 +434,10 @@ ListenMovie(FILE *fd,char *port)
 static status 
 StartDownload(FILE *fd)
 {	
+	/* Creo un proceso que se encargue de recibir los paquetes de descarga */
 	switch( fork() ) {
 		case 0:			
+			/* Falta incrementar el puerto para atender multiples conexiones */
 			if( (ListenMovie(fd,"1050")) != OK ) {
 			   exit(EXIT_FAILURE);
 			}
@@ -437,6 +445,7 @@ StartDownload(FILE *fd)
 			exit(EXIT_SUCCESS);
 			break;
 		case -1:
+			/* fclose(fd); */
 			return ERROR;
 			break;
 		default:

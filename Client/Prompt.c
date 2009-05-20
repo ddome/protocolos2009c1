@@ -229,7 +229,7 @@ static int Download_Command(scannerADT scanner, void * data)
 				printf("Se produjo un error al intentar descargar la pelicula\n");
 				break;
 			case DOWNLOAD_OK:
-				printf("Se comenzo a descargar correctamente\n");
+				printf("Agregada a la seccion de descargas\n");
 				break;
 			case DOWNLOAD_USER_NOT_LOG:
 				printf("Debe estar logueado para realizar descargas\n");

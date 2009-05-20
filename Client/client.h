@@ -17,6 +17,12 @@
 
 #define CONNECT_ERROR -10
 
+#define HOST_DOWNLOAD "127.0.0.1"
+#define HOST_SERVER   "127.0.0.1"
+
+#define PORT_DOWNLOAD "1050"
+#define PORT_SERVER   "1044"
+
 typedef enum client_login_status { LOGIN_USER_IS_LOG=-4,LOGIN_CONNECT_ERROR=-3,LOGIN_USER_INVALID =-2, LOGIN_PASS_INVALID=-1, USER_LOGIN_OK=1 } client_login_status;
 
 typedef enum client_change_passwd_status { CHANGE_ACCESS_DENY=-5,CHANGE_LOG_ERROR=-4,NEW_PASSWD_INVALID=-3,CHANGE_CONNECT_ERROR=-2,CHANGE_ERROR=-1,CHANGE_OK=1 } client_change_passwd_status;
