@@ -27,6 +27,14 @@ static status ListenMovie(FILE *fd,char *port);
 
 static status ProcessDownload(void *packet);
 
+/* GetData(packet) */
+
+static u_size GetLoginData( login_t pack, void ** data );
+
+static u_size GetHeaderData( header_t pack, void **data_ptr);
+
+static  u_size GetNewUserData( client_t pack, void **data_ptr);
+
 status 
 InitClient(void)
 {
@@ -60,10 +68,11 @@ UserExit(void)
 client_login_status
 UserLogin(char *user, char* passwd)
 {
-
 	int ret;
 	int ret_code;
 	login_t log;
+	void *data;
+	u_size size;
 	
 	/* Si estaba logueado con otra cuenta, lo deslogueo */
 	if( strcmp(log_user, "anonimo") != 0 )
@@ -73,7 +82,10 @@ UserLogin(char *user, char* passwd)
 	strcpy(log.user,user);
 	strcpy(log.passwd,passwd);
 	/* Mando el paquete */
-	ret_code = SendRequest(__USER_LOGIN__, 1, &log, sizeof(login_t));
+	if( (size=GetLoginData(log, &data)) == -1 )
+		return LOGIN_CONNECT_ERROR;
+	ret_code = SendRequest(__USER_LOGIN__, 1, data, size);
+	free(data);
 	/* Proceso la respuesta */
 	switch (ret_code) {
 		case __LOGIN_OK__: 
@@ -152,6 +164,8 @@ UserRegistration(char *user, char *passwd, char *rep_passwd, char *mail, char *d
 	client_user_reg ret = REG_OK;
 	client_t new_user;
 	int ret_code;
+	void *data;
+	u_size size;
 
 	/* Controlo que las clave de seguridad sea igual que la clave ingresada */
 	if( strcmp(passwd, rep_passwd) != 0 ) {
@@ -164,9 +178,10 @@ UserRegistration(char *user, char *passwd, char *rep_passwd, char *mail, char *d
 	strcpy(new_user.mail,mail);
 	strcpy(new_user.desc,desc);
 	new_user.level = level;
-		
+	size = GetNewUserData(new_user, &data);		
 	/* Mando el pedido */
-	ret_code = SendRequest(__REG_USER__, 1, &new_user, sizeof(client_t));
+	ret_code = SendRequest(__REG_USER__, 1, data, size);
+	free(data);	
 	/* Proceso la respuesta */
 	switch (ret_code) {
 		case __REG_USER_ERROR__:
@@ -282,6 +297,8 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 	int socket;
 	int ret;
 	ack_t *ack_ptr;
+	void *data;
+	u_size header_size;
 	
 	/* Tipo de pedido */
 	header.opCode = op_code;
@@ -289,13 +306,15 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 	/* Identificacion del usuario */
 	strcpy(header.user,log_user);
 	strcpy(header.passwd,log_passwd);
+	header_size = GetHeaderData(header, &data);	
 	/* Concateno los paquetes header y pedido */
-	if( (to_send = malloc(sizeof(header_t)+size)) == NULL )
+	if( (to_send = malloc(header_size+size)) == NULL )
 		return CONNECT_ERROR;	
-	memmove(to_send, &header, sizeof(header_t));
+	memmove(to_send, data, header_size);
+	free(data);
 	/* Chequeo si realmente se manda un paquete asociado al pedido */
 	if( packet != NULL ) {
-		memmove(to_send+sizeof(header_t), packet, size);
+		memmove(to_send+header_size, packet, size);
 	}	
 	/* Me conecto al servidor */
 	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
@@ -303,7 +322,7 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 		return CONNECT_ERROR;
 	}
 	/* Mando el paquete */
-	sendTCP(socket, to_send,sizeof(header_t)+size);
+	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
 	/* Espero por la respuesta del servidor */
 	ack_ptr = receiveTCP(socket);	
@@ -453,3 +472,74 @@ StartDownload(FILE *fd)
 			break;
 	}
 }
+
+static u_size
+GetHeaderData( header_t pack, void **data_ptr) 
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = sizeof(unsigned long) * 2 + MAX_USER_LEN + MAX_USER_PASS;
+	
+	if( (data=malloc(size)) == NULL )
+		return -1;
+	
+	pos=0;
+	memmove(data, &(pack.opCode), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, &(pack.total_objects), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, pack.user, MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(data+pos, pack.passwd, MAX_USER_PASS);
+	
+	*data_ptr = data;
+	return size;
+}
+
+static  u_size
+GetNewUserData( client_t pack, void **data_ptr)
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = MAX_USER_LEN  + MAX_USER_PASS + 
+		   MAX_USER_MAIL + MAX_USER_DESC + sizeof(unsigned char);
+	
+	if( (data=malloc(size)) == NULL )
+		return -1;
+	
+	pos=0;
+	memmove(data, pack.user, MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(data+pos, pack.passwd, MAX_USER_PASS);
+	pos+=MAX_USER_PASS;
+	memmove(data+pos, pack.mail, MAX_USER_MAIL);
+	pos+=MAX_USER_MAIL;
+	memmove(data+pos, pack.desc, MAX_USER_DESC);
+	pos+=MAX_USER_DESC;
+	memmove(data+pos, &pack.level, sizeof(unsigned char));
+	pos+=sizeof(unsigned char);
+	
+	*data_ptr = data;
+	return size;	
+}
+
+static u_size
+GetLoginData( login_t pack, void **data_ptr) 
+{
+	void *data;
+	
+	if( (data=malloc(MAX_USER_LEN + MAX_USER_PASS)) == NULL )
+		return -1;
+	
+	memmove(data, pack.user, MAX_USER_LEN);
+	memmove(data + MAX_USER_LEN, pack.passwd, MAX_USER_PASS);
+	
+	*data_ptr = data;
+	return MAX_USER_LEN + MAX_USER_PASS;
+}
+
+

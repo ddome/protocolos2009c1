@@ -39,6 +39,14 @@ static status UserDelete(char *user,char *passwd);
 
 static status SendMovie(char *path,char *ip,char *port);
 
+/* GetPack(data,&pack) */
+
+static u_size GetHeaderPack(void *data, header_t *header);
+
+static u_size GetLoginPack(void *data, login_t *log);
+
+static u_size GetNewUserPack(void *data, client_t *client);
+
 status 
 InitServer(void)
 {
@@ -141,40 +149,43 @@ Session(void *packet,int socket)
 	client_t client;
 	request_t req;
 	download_start_t start;
+	u_size header_size;
 	
 	
 	/* Levanto el header del paquete */
-	memmove(&header, packet, sizeof(header));
+	//memmove(&header, packet, sizeof(header));
+	
+	header_size = GetHeaderPack(packet,&header);
 	
 	switch (header.opCode) {
 		case __USER_LOGIN__:
 			/* Logueo al ususario */
-			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );	
+			GetLoginPack(packet+header_size,&log);
 			fprintf(stderr,"Llego un pedido de --login-- de user:%s passwd:%s\n",log.user,log.passwd);
 			return UserLogin(log,socket);
 			break;
 		case __NEW_PASSWD__:
 			/* Cambio de clave */
-			memmove(&log, packet + sizeof(header_t), sizeof(login_t) );
+			memmove(&log, packet+header_size, sizeof(login_t) );
 			fprintf(stderr,"Llego un pedido de --password-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserNewPasswd(log,socket,header.user,header.passwd);
 			break;
 		case __REG_USER__:
 			/* Registro de un nuevo usuario */
-			memmove(&client, packet + sizeof(header_t), sizeof(client_t) );
+			GetNewUserPack(packet+header_size,&client);
 			fprintf(stderr,"Llego un pedido de --new-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserRegister(client,socket);
 			break;
 		case __DOWNLOAD__:
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --download-- de user:%s passwd:%s\n",header.user,header.passwd);
-			memmove(&req, packet + sizeof(header_t), sizeof(request_t) );	
+			memmove(&req, packet+header_size, sizeof(request_t) );	
 			return UserDownload(req,socket, header.user, header.passwd);
 			break;
 		case __DOWNLOAD_START_OK__:
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --startdownload-- de user:%s passwd:%s\n",header.user,header.passwd);
-			memmove(&start, packet + sizeof(header_t), sizeof(download_start_t) );	
+			memmove(&start, packet+header_size, sizeof(download_start_t) );	
 			return UserStartDownload(start,socket,header.user,header.passwd);
 			break;	
 		case __LOG_OUT__:
@@ -282,7 +293,10 @@ UserRegister(client_t client,int socket)
 {
 	int ret = __REG_OK__;
 	ack_t ack;
-		
+	
+	fprintf(stderr, "%s %s %s %s\n", client.user,client.passwd,client.mail,client.desc);
+	
+	
 	/* Llamo a la funcion que pregunta si un nombre de usuario ya existe en la base ldap */
 	if( UserExist(ld, client.user) )
 		ret = __REG_USER_ERROR__;
@@ -503,5 +517,59 @@ SendMovie(char *path,char *ip,char *port)
 	fclose(fd);
 	fprintf(stderr,"Termine de transmitir\n");
 	return OK;
+}
+
+/* struct pack = GetPack(data) */
+
+static u_size
+GetHeaderPack(void *data, header_t *header)
+{	
+	u_size pos;
+	
+	pos=0;
+	memmove(&(header->opCode), data, sizeof(unsigned long int));
+	pos+=sizeof(unsigned long int);
+	memmove(&(header->total_objects), data+pos, sizeof(unsigned long int));
+	pos+=sizeof(unsigned long int);	
+	memmove(header->user, data+pos, MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(header->passwd, data+pos, MAX_USER_PASS);	
+	pos+=MAX_USER_PASS;
+	
+	return pos;
+}
+
+static u_size
+GetLoginPack(void *data, login_t *log)
+{	
+	u_size pos;
+	
+	pos = 0;
+	memmove(log->user, data, MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(log->passwd, data + MAX_USER_LEN, MAX_USER_PASS);
+	pos+=MAX_USER_PASS;
+
+	return pos;
+}
+
+static u_size
+GetNewUserPack(void *data, client_t *client)
+{	
+	u_size pos;
+	
+	pos = 0;
+	memmove(client->user, data, MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(client->passwd, data + pos , MAX_USER_PASS);
+	pos+=MAX_USER_PASS;
+	memmove(client->mail, data + pos , MAX_USER_MAIL);
+	pos+=MAX_USER_MAIL;
+	memmove(client->desc, data + pos , MAX_USER_DESC);
+	pos+=MAX_USER_DESC;
+	memmove(&(client->level), data + pos , sizeof(unsigned char));
+	pos+=sizeof(unsigned char);
+	
+	return pos;
 }
 
