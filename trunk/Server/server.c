@@ -510,6 +510,7 @@ SendMovie(char *path,char *ip,char *port)
 	FILE *fd;
 	void *to_send;
 	u_size header_size;
+	int num;
 	
 	/* Me conecto al cliente */
 	if( (socket=connectTCP(ip,port)) < 0 ){
@@ -528,8 +529,12 @@ SendMovie(char *path,char *ip,char *port)
 		to_send = malloc(header_size+bytes_read);
 		memmove(to_send, header_data, header_size);
 		memmove(to_send+header_size, data, bytes_read);;
-		sendTCP(socket, to_send,bytes_read+header_size);
-		fprintf(stderr,"Mando paquete %d\n", i);
+		num = sendTCP(socket, to_send,bytes_read+header_size) < 0;
+			
+		fprintf(stderr,"TCP %d\n", num);
+		
+		sleep(1);
+		
 		free(data);
 		free(header_data);
 		free(to_send);
