@@ -47,6 +47,10 @@ static u_size GetLoginPack(void *data, login_t *log);
 
 static u_size GetNewUserPack(void *data, client_t *client);
 
+static u_size GetDownloadStartOK(void *data, download_start_t * download_start);
+
+static u_size GetRequest(void *data, request_t * request);
+
 status 
 InitServer(void)
 {
@@ -179,13 +183,13 @@ Session(void *packet,int socket)
 		case __DOWNLOAD__:
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --download-- de user:%s passwd:%s\n",header.user,header.passwd);
-			memmove(&req, packet+header_size, sizeof(request_t) );	
+			GetRequest(packet+header_size,&req);
 			return UserDownload(req,socket, header.user, header.passwd);
 			break;
 		case __DOWNLOAD_START_OK__:
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --startdownload-- de user:%s passwd:%s\n",header.user,header.passwd);
-			memmove(&start, packet+header_size, sizeof(download_start_t) );	
+			GetDownloadStartOK(packet+header_size,&start);
 			return UserStartDownload(start,socket,header.user,header.passwd);
 			break;	
 		case __LOG_OUT__:
@@ -557,6 +561,30 @@ GetLoginPack(void *data, login_t *log)
 	pos+=MAX_USER_PASS;
 
 	return pos;
+}
+
+static u_size
+GetDownloadStartOK(void *data, download_start_t * download_start)
+{
+    u_size pos;
+    pos=0;
+    memmove(download_start->ip,data,50);
+    pos+=50;
+    memmove(download_start->port,data+pos,10);
+    pos+=10;
+    
+    return pos;
+}
+
+static u_size
+GetRequest(void *data, request_t * request)
+{
+    u_size pos;
+    pos=0;
+    memmove(request->ticket,data,20);
+    pos+=20;
+    
+    return pos;
 }
 
 static u_size
