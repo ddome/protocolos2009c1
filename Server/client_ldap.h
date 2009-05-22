@@ -1,7 +1,7 @@
 /*
- *  client_ldap.h
- *  MovieStoreServer
- */
+*  client_ldap.h
+*  MovieStoreServer
+*/
 
 #ifndef __CLIENT_LDAP_H__
 #define __CLIENT_LDAP_H__
@@ -14,24 +14,24 @@
 #include "../Common/app.h"
 
 /* Direccion por default */
-#define HOST "127.0.0.1"
+#define HOST "192.168.3.129"
 #define PORT 389
 
 /* Usuario root del ldap */
-#define ADMIN_DN "cn=admin,dc=nodomain"
+#define ADMIN_DN "uid=admin,o=movie_store.com"
 #define ADMIN_PASSWD "admin"
 
 /* Client default */
 #define CLIENT_KEY "uid"
-#define CLIENT_PATH "ou=clients,dc=nodomain"
+#define CLIENT_PATH "ou=clients,o=movie_store.com"
 
 /* Movies */
 #define MOVIE_KEY "uid"
 #define MOVIE_PATH "ou=movies,o=movie_store.com"
 
 /* Datos del servidor */
-#define MOVIE_STORE_DN   "dc=nodomain"
-#define MOVIE_STORE_NAME "nodomain"
+#define MOVIE_STORE_DN   "o=movie_store.com"
+#define MOVIE_STORE_NAME "movie_store.com"
 #define MOVIE_STORE_LOCATION "Buenos Aires"
 
 /* Funciones */

@@ -32,9 +32,6 @@ InitLdap(void)
 	if( ld == NULL ){
 		fprintf(stderr,"InitLdap ERROR: No pudo establecerce una coneccion con el servidor LDAP en el host %s:%d\n",HOST,PORT);
 	}
-
-	version = LDAP_VERSION3;
-	ldap_set_option( ld, LDAP_OPT_PROTOCOL_VERSION, &version );
 	
 	/* Seteo a la version 3 */
 	version = LDAP_VERSION3;

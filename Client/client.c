@@ -356,6 +356,8 @@ SendDownloadRequest(void *packet, u_size size)
 	download_header_t download_info,*download_info_ptr;
 	void *data;
 	u_size header_size;
+	void *ack_data;
+	u_size ack_size;
 	
 	download_info.ret_code = CONNECT_ERROR;
 	
@@ -380,9 +382,8 @@ SendDownloadRequest(void *packet, u_size size)
 	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
 	/* Espero por la respuesta del servidor */
-	download_info_ptr = receiveTCP(socket);	
-	download_info = *download_info_ptr;
-	free(download_info_ptr);
+	ack_data = receiveTCP(socket);	
+	GetDownloadHeaderPack(ack_data, &download_info);
 	/* Cierro la conexion????? */
 	close(socket);
 	return download_info;
@@ -593,7 +594,7 @@ GetDownloadStartData( download_start_t pack, void **data_ptr)
 		return -1;
 	
 	memmove(data, pack.ip, 50);
-	memmove(data, pack.port, 10);
+	memmove(data + 50, pack.port, 10);
 	
 	*data_ptr = data;
 	return 50 + 10;
