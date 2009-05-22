@@ -51,6 +51,10 @@ static u_size GetDownloadStartOK(void *data, download_start_t * download_start);
 
 static u_size GetRequest(void *data, request_t * request);
 
+static u_size GetDownloadHeaderData( download_header_t pack, void **data_ptr);
+
+static u_size GetDownloadData( download_t pack, void **data_ptr);
+
 status 
 InitServer(void)
 {
@@ -323,6 +327,8 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	int ret = __DOWNLOAD_START__;
 	download_header_t ack;
 	file_info_t file_info;
+	u_size size;
+	void *data;
 	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
@@ -345,6 +351,7 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	}
 	/* Mando la respuesta */
 	ack.ret_code = ret;
+	size = GetDownloadHeaderData(ack,&data);
 	sendTCP(socket, &ack, sizeof(download_header_t));
 
 	return OK;
@@ -370,6 +377,8 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 	/*if( GetMovieInfo(req.ticket,&file_info) == -1 ) {
 		return OK;
 	}*/
+	
+	fprintf(stderr,"%s %s\n",start.ip,start.port);
 	
 	switch( fork() ) {
 		case 0:
@@ -494,11 +503,13 @@ SendMovie(char *path,char *ip,char *port)
 {
 	download_t header;
 	void *data;
+	void *header_data;
 	u_size total_packets;
 	u_size bytes_read;
 	int socket;
 	FILE *fd;
 	void *to_send;
+	u_size header_size;
 	
 	/* Me conecto al cliente */
 	if( (socket=connectTCP(ip,port)) < 0 ){
@@ -509,17 +520,18 @@ SendMovie(char *path,char *ip,char *port)
 	int i;
 	header.total_packets = total_packets;
 	fd = fopen(path,"rb");
-	fprintf(stderr,"Empiezo a transmitir %s\n", i);
 	for(i=0;i<total_packets;i++) {
 		bytes_read = GetFileData(fd,_FILE_SIZE_,i,&data);
 		header.size = bytes_read;
 		header.n_packet = i;
-		to_send = malloc(sizeof(download_t)+bytes_read);
-		memmove(to_send, &header, sizeof(download_t));
-		memmove(to_send+sizeof(download_t), data, bytes_read);
-		sendTCP(socket, to_send,bytes_read+sizeof(download_t));
+		header_size = GetDownloadData(header, &header_data);
+		to_send = malloc(header_size+bytes_read);
+		memmove(to_send, header_data, header_size);
+		memmove(to_send+header_size, data, bytes_read);;
+		sendTCP(socket, to_send,bytes_read+header_size);
 		fprintf(stderr,"Mando paquete %d\n", i);
 		free(data);
+		free(header_data);
 		free(to_send);
 	}
 	
@@ -606,4 +618,61 @@ GetNewUserPack(void *data, client_t *client)
 	
 	return pos;
 }
+
+
+static u_size
+GetDownloadHeaderData( download_header_t pack, void **data_ptr)
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = sizeof(int) + MAX_MOVIE_LEN + MAX_PATH_LEN 
+			+ sizeof(unsigned long) + sizeof(u_size);
+	
+	if( (data=malloc(size)) == NULL )
+		return -1;
+	
+	pos=0;
+	memmove(data, &(pack.ret_code), sizeof(int));
+	pos+=sizeof(int);
+	memmove(data+pos, pack.title, MAX_MOVIE_LEN);
+	pos+=MAX_MOVIE_LEN;
+	memmove(data+pos, pack.path, MAX_PATH_LEN);
+	pos+=MAX_PATH_LEN;
+	memmove(data+pos, &(pack.total_packets), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, &(pack.size), sizeof(u_size));
+	pos+=sizeof(u_size);
+	
+	*data_ptr = data;
+	return size;
+	
+}
+
+static u_size
+GetDownloadData( download_t pack, void **data_ptr)
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = sizeof(unsigned long) * 2 + sizeof(u_size);
+	
+	if( (data=malloc(size)) == NULL )
+		return -1;
+	
+	pos=0;
+	memmove(data, &(pack.n_packet), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, &(pack.total_packets), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, &(pack.size), sizeof(u_size));
+	pos+=sizeof(u_size);
+	
+	*data_ptr = data;
+	return size;
+	
+}
+
 
