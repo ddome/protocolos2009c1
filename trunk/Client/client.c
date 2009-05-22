@@ -35,6 +35,16 @@ static u_size GetHeaderData( header_t pack, void **data_ptr);
 
 static  u_size GetNewUserData( client_t pack, void **data_ptr);
 
+static u_size GetRequestData( request_t pack, void **data_ptr);
+
+static u_size GetDownloadStartData( download_start_t pack, void **data_ptr);
+
+/* GetPack(data) */
+
+static u_size GetDownloadHeaderPack( void *data, download_header_t *pack );
+
+static u_size GetDownloadPack( void *data, download_t *pack);
+
 status 
 InitClient(void)
 {
@@ -249,10 +259,14 @@ UserDownload(char * ticket)
 	request_t request;
 	download_header_t download_info;
 	FILE *fd;
+	void *data;
+	u_size size;
 	
 	strcpy(request.ticket,ticket);
+	size = GetRequestData(request,&data);
 	/* Mando el pedido */
-	download_info = SendDownloadRequest(&request, sizeof(request_t));
+	download_info = SendDownloadRequest(data, size);
+	free(data);
 	/* Proceso la respuesta */
 	switch (download_info.ret_code) {
 		case __DOWNLOAD_ERROR__:
@@ -340,6 +354,8 @@ SendDownloadRequest(void *packet, u_size size)
 	void *to_send;
 	int socket;
 	download_header_t download_info,*download_info_ptr;
+	void *data;
+	u_size header_size;
 	
 	download_info.ret_code = CONNECT_ERROR;
 	
@@ -348,18 +364,20 @@ SendDownloadRequest(void *packet, u_size size)
 	header.total_objects = 1;
 	/* Identificacion del usuario */
 	strcpy(header.user,log_user);
-	strcpy(header.passwd,log_passwd);
+	strcpy(header.passwd,log_passwd);	
+	header_size = GetHeaderData(header, &data);	
 	/* Concateno los paquetes header y pedido */
-	if( (to_send = malloc(sizeof(header_t)+size)) == NULL )
+	if( (to_send = malloc(header_size+size)) == NULL )
 		return download_info;	
-	memmove(to_send, &header, sizeof(header_t));
+	memmove(to_send, data, header_size);
+	free(data);
 	/* Me conecto al servidor */
 	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
 		free(to_send);
 		return download_info;
 	}
 	/* Mando el paquete */
-	sendTCP(socket, to_send,sizeof(header_t)+size);
+	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
 	/* Espero por la respuesta del servidor */
 	download_info_ptr = receiveTCP(socket);	
@@ -377,6 +395,8 @@ SendSignal(u_size op_code, void *packet, u_size size)
 	header_t header;
 	void *to_send;
 	int socket;
+	u_size header_size;
+	void *data;
 	
 	/* Tipo de senial */
 	header.opCode = op_code;
@@ -385,17 +405,19 @@ SendSignal(u_size op_code, void *packet, u_size size)
 	strcpy(header.user,log_user);
 	strcpy(header.passwd,log_passwd);
 	/* Concateno los paquetes header y pedido */
-	if( (to_send = malloc(sizeof(header_t)+size)) == NULL )
+	header_size = GetHeaderData(header, &data);	
+	if( (to_send = malloc(header_size+size)) == NULL )
 		return ERROR;	
-	memmove(to_send, &header, sizeof(header_t));
-	memmove(to_send + sizeof(header_t),packet,size);
+	memmove(to_send, data, header_size);
+	memmove(to_send + header_size,packet,size);
+	free(data);
 	/* Me conecto al servidor */
 	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
 		free(to_send);
 		return ERROR;
 	}
 	/* Mando el paquete */
-	sendTCP(socket, to_send,sizeof(header_t)+size);
+	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
 	
 	close(socket);
@@ -412,6 +434,9 @@ ListenMovie(FILE *fd,char *port)
 	download_t header;
 	download_start_t start;
 	void *packet;
+	void *data;
+	u_size size;
+	u_size header_size;
 	
 	/* Preparo el puerto que va a escuchar la conexion */
 	if( (passive_s=prepareTCP(HOST_DOWNLOAD,port,prepareServer)) < 0 ) {
@@ -424,8 +449,11 @@ ListenMovie(FILE *fd,char *port)
 	/* Mando la senial al server pidiendo el inicio de la descarga */
 	strcpy(start.port,port);
 	strcpy(start.ip,HOST_DOWNLOAD);
-	if( SendSignal(__DOWNLOAD_START_OK__, &start, sizeof(download_start_t)) == ERROR )
+	
+	size = GetDownloadStartData(start, &data);	
+	if( SendSignal(__DOWNLOAD_START_OK__, data, size) == ERROR )
 		return ERROR;
+	free(data);
 	
 	exit = FALSE;
 	n_packet = 0;
@@ -433,9 +461,9 @@ ListenMovie(FILE *fd,char *port)
 	while (!exit) {
 		/* Recibo un paquete */
 		packet = receiveTCP(ssock);
-		memmove(&header, packet, sizeof(download_t));	
+		header_size = GetDownloadPack(packet,&header);
 		/* Lo bajo a disco */
-		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+sizeof(download_t),header.size);
+		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
 		/* Verifico la cantidad total de paquetes a descargar */
 		total_packets = header.total_packets;
 		free(packet);
@@ -542,4 +570,67 @@ GetLoginData( login_t pack, void **data_ptr)
 	return MAX_USER_LEN + MAX_USER_PASS;
 }
 
+static u_size
+GetRequestData( request_t pack, void **data_ptr) 
+{
+	void *data;
+	
+	if( (data=malloc(20)) == NULL )
+		return -1;
+	
+	memmove(data, pack.ticket, 20);
+	
+	*data_ptr = data;
+	return 20;
+}
 
+static u_size
+GetDownloadStartData( download_start_t pack, void **data_ptr) 
+{
+	void *data;
+	
+	if( (data=malloc(50 + 10)) == NULL )
+		return -1;
+	
+	memmove(data, pack.ip, 50);
+	memmove(data, pack.port, 10);
+	
+	*data_ptr = data;
+	return 50 + 10;
+}
+
+static u_size
+GetDownloadHeaderPack( void *data, download_header_t *pack )
+{
+	u_size pos;
+	
+	pos = 0;
+	memmove(&(pack->ret_code), data, sizeof(int) );
+	pos+=sizeof(int);
+	memmove(pack->title, data + pos , MAX_MOVIE_LEN);
+	pos+=MAX_MOVIE_LEN;
+	memmove(pack->path, data + pos , MAX_PATH_LEN);
+	pos+=MAX_PATH_LEN;
+	memmove(&(pack->total_packets), data + pos , sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(&(pack->size), data + pos , sizeof(u_size));
+	pos+=sizeof(u_size);
+	
+	return pos;
+}
+
+static u_size
+GetDownloadPack( void *data, download_t *pack)
+{
+	u_size pos;
+	
+	pos = 0;
+	memmove(&(pack->n_packet), data, sizeof(unsigned long) );
+	pos+=sizeof(sizeof(unsigned long));
+	memmove(&(pack->total_packets), data + pos,sizeof(unsigned long) );
+	pos+=sizeof(unsigned long);
+	memmove(&(pack->size), data + pos , sizeof(u_size));
+	pos+=sizeof(u_size);
+	
+	return pos;
+}
