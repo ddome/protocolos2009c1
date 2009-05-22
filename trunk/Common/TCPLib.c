@@ -1,6 +1,5 @@
 #include "TCPLib.h"
 
-
 int prepareTCP(const char * host,const char * port,type_t type)
 {
 	int socketFD=0;
@@ -143,7 +142,7 @@ int acceptTCP(int socketFD)
 	
 	return newSocketFD;
 }
-
+/*
 int sendTCP(int socketFD,void * data,size_t size)
 {
 	int ret=0;
@@ -151,7 +150,7 @@ int sendTCP(int socketFD,void * data,size_t size)
 	
 	header_size = size;
 	
-	/* Mando el tamanio del paquete a levantar */
+	// Mando el tamanio del paquete a levantar
 	send(socketFD,&header_size,sizeof(u_size),0);
 	
 	if(send(socketFD,data,size,0)==-1);
@@ -170,7 +169,42 @@ int sendTCP(int socketFD,void * data,size_t size)
 		}
 	}
 	return ret;
+}*/
+
+
+int sendTCP(int socketFD,void * data,size_t size)
+{
+	int ret=0;
+	void * toSend;
+	
+	if( (toSend=malloc(sizeof(u_size) + size))==NULL )
+	{
+	    //Agregar syslog
+	    return GEN_ERROR;
+	}
+	
+	memmove(toSend,size,sizeof(u_size));
+	memmove(toSend+sizeof(u_size),data,size);
+
+	if(send(socketFD,data,size,0)==-1);
+	{
+		//Agregar syslog
+		switch(errno)
+		{
+			case ECONNRESET: 	ret=CONN_RST_PEER;
+								break;
+			case EINVAL:
+			case EFAULT: 		ret=INV_ARGS;
+								break;
+			case EMSGSIZE: 		ret=MSG_SIZE_ERR;
+								break;
+			default:            ret=GEN_ERROR;
+		}
+	}
+	return ret;
 }
+
+
 
 void * receiveTCP(int socketFD)
 {

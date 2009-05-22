@@ -1,5 +1,5 @@
-#ifndef TCPLIB_H_
-#define TCPLIB_H_
+#ifndef _TCPLIB_H_
+#define _TCPLIB_H_
 
 #include<stdio.h>
 #include<string.h>
@@ -32,11 +32,11 @@
 #define INV_ARGS -26
 /*Message size error.*/
 #define MSG_SIZE_ERR -27
-
+/*
 typedef struct{
     int num;
     char mensaje[100];
-}packet_t;
+}packet_t;*/
 
 /*Especifica si el socket se debe crear para escuchar conexiones o para escuchar
  * conexiones o para conectarse a un cliente para la tranferencia de archivos.*/
@@ -68,4 +68,4 @@ void * receiveTCP(int socketFD);
 /*Cierra una conexion determinada.*/
 void closeTCP(int socketFD);
 
-#endif /*TCPLIB_H_*/
+#endif
