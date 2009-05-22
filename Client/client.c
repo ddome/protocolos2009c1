@@ -463,6 +463,7 @@ ListenMovie(FILE *fd,char *port)
 		/* Recibo un paquete */
 		packet = receiveTCP(ssock);
 		header_size = GetDownloadPack(packet,&header);
+		//fprintf(stderr,"caca: (%ld) (%ld)\n",header.n_packet,n_packet);
 		/* Lo bajo a disco */
 		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
 		/* Verifico la cantidad total de paquetes a descargar */
@@ -472,6 +473,7 @@ ListenMovie(FILE *fd,char *port)
 		/* Me fijo si llego a la cantidad total de paquetes bajados */
 		if( n_packet >= total_packets )
 			exit = TRUE;
+		fprintf(stderr,"caca: (%ld) (%ld)\n",header.n_packet,n_packet);
 	}
 	closeTCP(ssock);
 	closeTCP(passive_s);
