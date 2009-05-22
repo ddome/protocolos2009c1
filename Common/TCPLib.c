@@ -183,10 +183,10 @@ int sendTCP(int socketFD,void * data,size_t size)
 	    return GEN_ERROR;
 	}
 	
-	memmove(toSend,size,sizeof(u_size));
+	memmove(toSend,&size,sizeof(u_size));
 	memmove(toSend+sizeof(u_size),data,size);
 
-	if(send(socketFD,data,size,0)==-1);
+	if(send(socketFD,toSend,size,0)==-1);
 	{
 		//Agregar syslog
 		switch(errno)
