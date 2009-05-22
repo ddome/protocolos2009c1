@@ -351,6 +351,9 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 {		
 	file_info_t file_info;
 	
+	
+	fprintf(stderr,"Antes\n");
+	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
 		return OK;
@@ -370,6 +373,7 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 			
 			/* Espero a que se establezca la conexion */
 			sleep(2);
+			fprintf(stderr,"Empiezoooooo\n");
 			if( SendMovie("test",start.ip,start.port) != OK )
 				exit(EXIT_FAILURE);
 			else
@@ -501,6 +505,7 @@ SendMovie(char *path,char *ip,char *port)
 	int i;
 	header.total_packets = total_packets;
 	fd = fopen(path,"rb");
+	fprintf(stderr,"Empiezo a transmitir %s\n", i);
 	for(i=0;i<total_packets;i++) {
 		bytes_read = GetFileData(fd,_FILE_SIZE_,i,&data);
 		header.size = bytes_read;
@@ -509,6 +514,7 @@ SendMovie(char *path,char *ip,char *port)
 		memmove(to_send, &header, sizeof(download_t));
 		memmove(to_send+sizeof(download_t), data, bytes_read);
 		sendTCP(socket, to_send,bytes_read+sizeof(download_t));
+		fprintf(stderr,"Mando paquete %d\n", i);
 		free(data);
 		free(to_send);
 	}
