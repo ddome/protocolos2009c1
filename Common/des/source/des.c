@@ -33,8 +33,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bit.h"
-#include "encrypt.h"
+#include "../include/bit.h"
+#include "../include/encrypt.h"
 
 /*****************************************************************************
 *                                                                            *
