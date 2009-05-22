@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ldap.h>
 
 #include "client_ldap.h"
 
@@ -31,6 +32,9 @@ InitLdap(void)
 	if( ld == NULL ){
 		fprintf(stderr,"InitLdap ERROR: No pudo establecerce una coneccion con el servidor LDAP en el host %s:%d\n",HOST,PORT);
 	}
+
+	version = LDAP_VERSION3;
+	ldap_set_option( ld, LDAP_OPT_PROTOCOL_VERSION, &version );
 	
 	/* Seteo a la version 3 */
 	version = LDAP_VERSION3;
@@ -38,7 +42,7 @@ InitLdap(void)
 	
 	/* Se identifica al usuario root */
 	if( ldap_bind_s(ld,ADMIN_DN,ADMIN_PASSWD,LDAP_AUTH_SIMPLE) != LDAP_SUCCESS ){
-		fprintf(stderr,"InitLdap ERROR: El servidor LDAP rechazo el pedido de autentificacion del usuario root %d\n",ADMIN_DN);		
+		fprintf(stderr,"InitLdap ERROR: El servidor LDAP rechazo el pedido de autentificacion del usuario root %s\n",ADMIN_DN);		
 	}
 	
 	/* Se inicializa la base de datos */
@@ -319,7 +323,7 @@ RootAdd(LDAP *ld)
 	/* o */
 	
 	attribute2.mod_op = LDAP_MOD_ADD;
-	attribute2.mod_type = "o";
+	attribute2.mod_type = "dc";
 	attribute2.mod_vals.modv_strvals = o_value;	
 	attributes[1] = &attribute2;
 	
