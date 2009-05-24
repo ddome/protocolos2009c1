@@ -20,7 +20,7 @@
 
 #define MAX_PATH_LEN     50
 
-#define _FILE_SIZE_ 1500
+#define _FILE_SIZE_ 1000
 
 /* Codigos del pedido (opCode) */
 

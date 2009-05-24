@@ -39,7 +39,7 @@ static status UserDelete(char *user,char *passwd);
 
 static status SendMovie(char *path,char *ip,char *port);
 
-/* GetPack(data,&pack) */
+/* GetPack(data) */
 
 static u_size GetHeaderPack(void *data, header_t *header);
 
@@ -50,6 +50,8 @@ static u_size GetNewUserPack(void *data, client_t *client);
 static u_size GetDownloadStartOK(void *data, download_start_t * download_start);
 
 static u_size GetRequest(void *data, request_t * request);
+
+/* GetData(pack) */
 
 static u_size GetDownloadHeaderData( download_header_t pack, void **data_ptr);
 
@@ -160,9 +162,7 @@ Session(void *packet,int socket)
 	u_size header_size;
 	
 	
-	/* Levanto el header del paquete */
-	//memmove(&header, packet, sizeof(header));
-	
+	/* Levanto el header del paquete */	
 	header_size = GetHeaderPack(packet,&header);
 	
 	switch (header.opCode) {
@@ -208,6 +208,8 @@ Session(void *packet,int socket)
 	}
 	
 }
+
+/* Funciones de atencion de pedidos */
 
 status
 UserLogin(login_t log,int socket)
@@ -624,6 +626,7 @@ GetNewUserPack(void *data, client_t *client)
 	return pos;
 }
 
+/* GetData(pack) */
 
 static u_size
 GetDownloadHeaderData( download_header_t pack, void **data_ptr)

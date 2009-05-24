@@ -17,8 +17,8 @@
 
 #define CONNECT_ERROR -10
 
-#define HOST_DOWNLOAD "192.168.1.90"
-#define HOST_SERVER   "192.168.1.210"
+#define HOST_DOWNLOAD "127.0.0.1"
+#define HOST_SERVER   "127.0.0.1"
 
 #define PORT_DOWNLOAD "1050"
 #define PORT_SERVER   "1044"
