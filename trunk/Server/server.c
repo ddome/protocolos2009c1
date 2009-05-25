@@ -587,10 +587,10 @@ GetDownloadStartOK(void *data, download_start_t * download_start)
 {
     u_size pos;
     pos=0;
-    memmove(download_start->ip,data,50);
-    pos+=50;
-    memmove(download_start->port,data+pos,10);
-    pos+=10;
+    memmove(download_start->ip,data,MAX_HOST_LEN);
+    pos+=MAX_HOST_LEN;
+    memmove(download_start->port,data+pos,MAX_PORT_LEN);
+    pos+=MAX_PORT_LEN;
     
     return pos;
 }
