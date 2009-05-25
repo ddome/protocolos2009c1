@@ -592,14 +592,14 @@ GetDownloadStartData( download_start_t pack, void **data_ptr)
 {
 	void *data;
 	
-	if( (data=malloc(50 + 10)) == NULL )
+	if( (data=malloc(MAX_HOST_LEN + MAX_PORT_LEN)) == NULL )
 		return -1;
 	
-	memmove(data, pack.ip, 50);
-	memmove(data + 50, pack.port, 10);
+	memmove(data, pack.ip, MAX_HOST_LEN);
+	memmove(data + MAX_HOST_LEN, pack.port, MAX_PORT_LEN);
 	
 	*data_ptr = data;
-	return 50 + 10;
+	return MAX_HOST_LEN + MAX_PORT_LEN;
 }
 
 static u_size

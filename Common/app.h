@@ -20,6 +20,12 @@
 
 #define MAX_PATH_LEN     50
 
+#define MAX_HOST_LEN 20
+#define MAX_PORT_LEN 10
+
+#define MAX_SERVER_LEN 30
+#define MAX_SERVER_KEY 10
+
 #define _FILE_SIZE_ 1000
 
 /* Codigos del pedido (opCode) */
@@ -98,8 +104,8 @@ typedef struct {
 } request_t;
 
 typedef struct {
-	char ip[50];
-	char port[10];
+	char ip[MAX_HOST_LEN];
+	char port[MAX_PORT_LEN];
 } download_start_t;
 
 typedef struct {
@@ -115,6 +121,19 @@ typedef struct {
 	unsigned long total_packets;
 	u_size size;
 } download_t;
+
+/* Payment servers */
+
+typedef struct {
+	char name[MAX_SERVER_LEN];
+} server_request_t;
+
+typedef struct {
+	char name[MAX_SERVER_LEN];
+	char host[MAX_HOST_LEN];
+	char port[MAX_HOST_LEN];
+	char key[MAX_SERVER_KEY];
+} payment_server_t;
 
 /* Respuesta */
 typedef struct {
