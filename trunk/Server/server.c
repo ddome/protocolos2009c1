@@ -22,7 +22,7 @@
 #include "../Common/des/include/encrypt.h"
 #include "../Common/fileHandler.h"
 
-/* Variable global que guarda la coneccion con el servidor LDAP */
+/* Variable global que guarda la conexion con el servidor LDAP */
 LDAP *ld;
 
 /* Puerto de conexion del servidor */
@@ -31,7 +31,9 @@ int passive_s;
 /* Informacion de los usuarios online */
 hashADT users_online;
 
-/* Static functions */
+/************************************************************/
+/*                    Static functions                      */
+/************************************************************/
 
 static boolean UserCanAcces(char *user,char *passwd);
 
@@ -39,7 +41,9 @@ static status UserDelete(char *user,char *passwd);
 
 static status SendMovie(char *path,char *ip,char *port);
 
-/* GetPack(data) */
+/************************************************************/
+/*                      GetPack(data)                       */
+/************************************************************/
 
 static u_size GetHeaderPack(void *data, header_t *header);
 
@@ -47,15 +51,23 @@ static u_size GetLoginPack(void *data, login_t *log);
 
 static u_size GetNewUserPack(void *data, client_t *client);
 
-static u_size GetDownloadStartOK(void *data, download_start_t * download_start);
+static u_size GetDownloadStartOK(void *data, 
+								 download_start_t * download_start);
 
 static u_size GetRequest(void *data, request_t * request);
 
-/* GetData(pack) */
+/************************************************************/
+/*                   GetData(pack)                          */
+/************************************************************/
 
-static u_size GetDownloadHeaderData( download_header_t pack, void **data_ptr);
+static u_size GetDownloadHeaderData( download_header_t pack, 
+									void **data_ptr);
 
 static u_size GetDownloadData( download_t pack, void **data_ptr);
+
+
+/************************************************************/
+
 
 status 
 InitServer(void)
@@ -80,8 +92,7 @@ InitServer(void)
 	}
 		
 	return OK;
-}	
-	
+}
 
 status 
 StartServer(void)
@@ -147,9 +158,9 @@ EndServer(void)
 	EndLdap(ld);
 }
 
-
-/* Atencion de pedidos */
-
+/*******************************************************************************************************/
+/*                                       Atencion de pedidos                                           */
+/*******************************************************************************************************/
 
 status
 Session(void *packet,int socket)
@@ -209,7 +220,11 @@ Session(void *packet,int socket)
 	
 }
 
-/* Funciones de atencion de pedidos */
+/*******************************************************************************************************/
+/*                                   Funciones de atencion de pedidos                                  */
+/*******************************************************************************************************/
+
+/* case __USER_LOGIN__ */
 
 status
 UserLogin(login_t log,int socket)
@@ -248,6 +263,8 @@ UserLogin(login_t log,int socket)
 	
 	return OK;
 }
+
+/* case __NEW_PASSWD__ */
 
 status 
 UserNewPasswd(login_t log,int socket, char *user,char *passwd)
@@ -298,14 +315,13 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	return OK;
 }
 
+/* case __REG_USER__ */
+
 status
 UserRegister(client_t client,int socket)
 {
 	int ret = __REG_OK__;
 	ack_t ack;
-	
-	fprintf(stderr, "%s %s %s %s\n", client.user,client.passwd,client.mail,client.desc);
-	
 	
 	/* Llamo a la funcion que pregunta si un nombre de usuario ya existe en la base ldap */
 	if( UserExist(ld, client.user) )
@@ -322,6 +338,8 @@ UserRegister(client_t client,int socket)
 	
 	return OK;
 }
+
+/* case __DOWNLOAD__ */
 
 status
 UserDownload(request_t req,int socket,char *user,char *passwd)
@@ -358,6 +376,8 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 
 	return OK;
 }
+
+/* case __DOWNLOAD_START_OK__ */
 
 status
 UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
@@ -403,6 +423,8 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 	}
 }
 
+/* case __LOG_OUT__ */
+
 status
 UserLogout(int socket, char *user, char *passwd)
 {
@@ -429,8 +451,9 @@ UserLogout(int socket, char *user, char *passwd)
 	return OK;
 }
 
-
-/* Funciones del manejo de la tabla de hashing */
+/*******************************************************************************************************/
+/*                           Funciones de manejo de la tabla de hashing                               */
+/*******************************************************************************************************/
 
 int
 UsersComp( void *v1, void *v2 )
@@ -455,9 +478,12 @@ UsersHash( void *v1, int size )
 	return hash % size;
 }
 
-/* Static Functions */
+/*******************************************************************************************************/
+/*                                          Static Functions                                           */
+/*******************************************************************************************************/
 
 /* Funcion que controla la identificacion de los usuarios */
+
 static boolean 
 UserCanAcces(char *user,char *passwd)
 {
@@ -480,6 +506,8 @@ UserCanAcces(char *user,char *passwd)
 	return TRUE;
 }
 
+/* Borro el usuario de la tabla de usuarios online */
+
 static status
 UserDelete(char *user,char *passwd)
 {
@@ -499,6 +527,8 @@ UserDelete(char *user,char *passwd)
 	free(aut);
 	return OK;
 }
+
+/* Manda el archivo una vez establecida la conexion servidor -> cliente */
 
 static status
 SendMovie(char *path,char *ip,char *port)
@@ -548,7 +578,9 @@ SendMovie(char *path,char *ip,char *port)
 	return OK;
 }
 
-/* struct pack = GetPack(data) */
+/*******************************************************************************************************/
+/*                                struct pack = GetPack(data)                                          */
+/*******************************************************************************************************/
 
 static u_size
 GetHeaderPack(void *data, header_t *header)
@@ -626,7 +658,9 @@ GetNewUserPack(void *data, client_t *client)
 	return pos;
 }
 
-/* GetData(pack) */
+/*******************************************************************************************************/
+/*                                          GetData(pack)                                              */
+/*******************************************************************************************************/
 
 static u_size
 GetDownloadHeaderData( download_header_t pack, void **data_ptr)

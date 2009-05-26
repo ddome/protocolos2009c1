@@ -45,8 +45,8 @@ hashElementT GetHElement(hashADT hash, int pos);
 
 /* Destruye toda la tabla */
 
-int	HTableIsEmpty(hashADT hash);
-
 void FreeHash(hashADT hash);
+
+int	HTableIsEmpty(hashADT hash);
 
 #endif /*HASH_H_*/
