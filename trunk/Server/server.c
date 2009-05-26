@@ -82,7 +82,7 @@ InitServer(void)
 		
 	/* Iniciar TCP */
 	
-	if( (passive_s=prepareTCP(HOST_DOWNLOAD,PORT_SERVER,prepareServer)) < 0 ) {
+	if( (passive_s=prepareTCP(HOST_SERVER,PORT_SERVER,prepareServer)) < 0 ) {
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",passive_s);
 		return FATAL_ERROR;
 	}	
@@ -98,7 +98,7 @@ status
 StartServer(void)
 {
 	int ssock;
-	void * packet;
+	void * data;
 	fd_set rfds;
 	fd_set afds;	
 	int fd, nfds;
@@ -134,11 +134,12 @@ StartServer(void)
 		for(fd=0; fd<nfds; ++fd) {
 			if (fd != passive_s && FD_ISSET(fd, &rfds)) {
 								
-				packet=receiveTCP(fd);
-				/* Proceso el packet */
-				if( Session(packet,fd) != FATAL_ERROR ) {
+				data=receiveTCP(fd);
+				/* Proceso el paquete */
+				if( Session(data,fd) != FATAL_ERROR ) {
 					close(fd); // Tengo que cerrar la conexion?
 					FD_CLR(fd, &afds);
+					free(data);
 				}
 				else {
 					return FATAL_ERROR;
@@ -163,7 +164,7 @@ EndServer(void)
 /*******************************************************************************************************/
 
 status
-Session(void *packet,int socket)
+Session(void *data,int socket)
 {
 	header_t header;	
 	login_t log;
@@ -174,37 +175,37 @@ Session(void *packet,int socket)
 	
 	
 	/* Levanto el header del paquete */	
-	header_size = GetHeaderPack(packet,&header);
+	header_size = GetHeaderPack(data,&header);
 	
 	switch (header.opCode) {
 		case __USER_LOGIN__:
 			/* Logueo al ususario */
-			GetLoginPack(packet+header_size,&log);
+			GetLoginPack(data+header_size,&log);
 			fprintf(stderr,"Llego un pedido de --login-- de user:%s passwd:%s\n",log.user,log.passwd);
 			return UserLogin(log,socket);
 			break;
 		case __NEW_PASSWD__:
 			/* Cambio de clave */
-			memmove(&log, packet+header_size, sizeof(login_t) );
+			memmove(&log, data+header_size, sizeof(login_t) );
 			fprintf(stderr,"Llego un pedido de --password-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserNewPasswd(log,socket,header.user,header.passwd);
 			break;
 		case __REG_USER__:
 			/* Registro de un nuevo usuario */
-			GetNewUserPack(packet+header_size,&client);
+			GetNewUserPack(data+header_size,&client);
 			fprintf(stderr,"Llego un pedido de --new-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserRegister(client,socket);
 			break;
 		case __DOWNLOAD__:
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --download-- de user:%s passwd:%s\n",header.user,header.passwd);
-			GetRequest(packet+header_size,&req);
+			GetRequest(data+header_size,&req);
 			return UserDownload(req,socket, header.user, header.passwd);
 			break;
 		case __DOWNLOAD_START_OK__:
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --startdownload-- de user:%s passwd:%s\n",header.user,header.passwd);
-			GetDownloadStartOK(packet+header_size,&start);
+			GetDownloadStartOK(data+header_size,&start);
 			return UserStartDownload(start,socket,header.user,header.passwd);
 			break;	
 		case __LOG_OUT__:

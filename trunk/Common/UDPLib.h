@@ -12,6 +12,8 @@
 #include<arpa/inet.h>
 #include<netdb.h>
 
+#include "defines.h"
+
 #define DIR_INET_LEN 18
 
 #define GEN_ERROR -1
@@ -22,7 +24,6 @@ typedef struct{
     int num;
     char mensaje[50];
 }mensaje_t;
-typedef unsigned long u_size;
 /*------------DEBUGEO--------*/
 
 typedef struct{
@@ -35,7 +36,7 @@ int prepareUDP(const char * host,const char * port);
 
 int sendUDP(int socketFD,void * data,size_t size,const char * host,const char * port);
 
-recvData_t * receiveTCP(int socketFD);
+recvData_t * receiveUDP(int socketFD);
 
 void FreeRecvData(recvData_t * data);
 
