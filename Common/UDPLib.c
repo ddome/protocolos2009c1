@@ -84,9 +84,15 @@ sendUDP(int socketFD,void * data,size_t size,const char * host,const char * port
 	memmove(toSend+sizeof(u_size),data,size);
 
 	if(sendto(socketFD,toSend,sizeof(u_size) + size,0,(struct sockaddr *)&sendAddress,sizeof(struct sockaddr_in))<0)
+	{
+		free(toSend);
 	    return -1;
+	}
 	else
+	{
+		free(toSend);
 	    return 0;
+	}
     }
     
     return socketFD;
