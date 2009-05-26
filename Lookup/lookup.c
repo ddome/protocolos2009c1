@@ -17,7 +17,7 @@
 #include "list.h"
 #include "../Common/app.h"
 #include "../Common/genlib.h"
-#include "../Common/TCPLib.h"
+#include "../Common/UDPLib.h"
 #include "../Common/des/include/encrypt.h"
 
 /* Lista con los servers disponibles */
@@ -33,8 +33,15 @@ InitLookup(void)
 status 
 StartLookup(void)
 {	
+	int socket;
+	void *data;
+	socket = prepareUDP("127.0.0.1", "1060");
+	
 	while(1) {
 		
+		data = receiveUDP(socket);
+		if( Session(data,socket) == FATAL_ERROR )
+			exit(EXIT_FAILURE);	
 	}	
 	
 	return OK;
@@ -48,6 +55,18 @@ EndLookup(void)
 
 
 /* Atencion de pedidos */
+
+status
+Session(void *data,int socket)
+{
+	server_request_t req;
+	payment_server_t *ack;
+	
+	
+	ack = GetServer(req.name);
+	sendUDP
+	return OK;
+}
 
 /* Static Fuctions */
 

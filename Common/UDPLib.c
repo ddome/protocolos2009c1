@@ -99,7 +99,7 @@ sendUDP(int socketFD,void * data,size_t size,const char * host,const char * port
 }
 
 recvData_t *
-receiveTCP(int socketFD)
+receiveUDP(int socketFD)
 {
     struct sockaddr_in sendAddress;
     socklen_t len=sizeof(struct sockaddr_in);
