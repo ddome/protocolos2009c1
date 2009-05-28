@@ -12,33 +12,49 @@
 #include<arpa/inet.h>
 #include<netdb.h>
 
-#include "defines.h"
+/* Definir el tamaño maximo de los datos a mandar y a recibir.*/
+#define UDP_MTU 1
 
-#define DIR_INET_LEN 18
+#define DIR_INET_LEN 1024
+
+#define OK 1
 
 #define GEN_ERROR -1
 
 #define INV_HOST -2
-/*------------DEBUGEO--------*/
-typedef struct{
-    int num;
-    char mensaje[50];
-}mensaje_t;
-/*------------DEBUGEO--------*/
 
 typedef struct{
-    short port;
-    char dir_inet[DIR_INET_LEN+10];
-    void * data;
-}recvData_t;
+    unsigned short port;
+    char dir_inet[DIR_INET_LEN+1];
+}host_t;
+
+
 
 int prepareUDP(const char * host,const char * port);
 
-int sendUDP(int socketFD,void * data,size_t size,const char * host,const char * port);
 
-recvData_t * receiveUDP(int socketFD);
+/*socketFD: 	Socket descriptor
+ *data:		Datos a enviar. Debe ser menor o igual a UDP_MTU.
+ *		si no es truncado.
+ *dest:		struct del tipo host_t debe contener la informacion
+ *		del host destino.
+ *Uso de host_t:
+ *		host_t host;
+ *		host.port=(unsigned shor)atoi("1007");
+ *		strncpy(host.dir_inet,"127.0.0.1",DIR_INET_LEN);
+*/
+int sendUDP(int socketFD,void * data,host_t dest);
 
-void FreeRecvData(recvData_t * data);
+
+/*sender:	puntero a una estructura de tipo host_t. La funcion
+ *		devuelve en dicho puntero informacion sobre el
+ *		host que envio los datos.
+ *
+ *El tamaño de los datos que devuelve la funcion es igual a UDP_MTU,
+ *sin embardo el tamaño de los datos enviados por el host puede ser
+ *menor.
+*/
+void * receiveUDP(int socketFD,host_t * sender);
 
 void CloseUDP(int socketFD);
 #endif
