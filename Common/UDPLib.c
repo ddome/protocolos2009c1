@@ -56,41 +56,29 @@ int prepareUDP(const char * host,const char * port)
 	return socketFD;	
 }
 
-int
-sendUDP(int socketFD,void * data,size_t size,const char * host,const char * port)
+int 
+sendUDP(int socketFD,void * data,host_t dest)
 {
     struct sockaddr_in sendAddress;
     struct hostent	*phe;
-    void * toSend;
     
     memset(&sendAddress, 0x0, sizeof(sendAddress));
     sendAddress.sin_family=AF_INET;
-    sendAddress.sin_port=htons((unsigned short)atoi(port));
+    sendAddress.sin_port=htons(dest.port);
 
-    if ( (phe = gethostbyname(host)) )
+    if ( (phe = gethostbyname(dest.dir_inet)) )
 	    memcpy(&sendAddress.sin_addr, phe->h_addr, phe->h_length);
-    else if ((sendAddress.sin_addr.s_addr = inet_addr(host))==INADDR_NONE)
+    else if ((sendAddress.sin_addr.s_addr = inet_addr(dest.dir_inet))==INADDR_NONE)
 	    socketFD=INV_HOST;
     
     if(socketFD>=0)
     {
-	if( (toSend=malloc(sizeof(u_size) + size))==NULL )
+	if(sendto(socketFD,data,UDP_MTU,0,(struct sockaddr *)&sendAddress,sizeof(struct sockaddr_in))<0)
 	{
-	    //Agregar syslog
-	    return GEN_ERROR;
-	}
-	
-	memmove(toSend,&size,sizeof(u_size));
-	memmove(toSend+sizeof(u_size),data,size);
-
-	if(sendto(socketFD,toSend,sizeof(u_size) + size,0,(struct sockaddr *)&sendAddress,sizeof(struct sockaddr_in))<0)
-	{
-		free(toSend);
 	    return -1;
 	}
 	else
 	{
-		free(toSend);
 	    return 0;
 	}
     }
@@ -98,66 +86,33 @@ sendUDP(int socketFD,void * data,size_t size,const char * host,const char * port
     return socketFD;
 }
 
-recvData_t *
-receiveUDP(int socketFD)
+void *
+receiveUDP(int socketFD,host_t * sender)
 {
     struct sockaddr_in sendAddress;
     socklen_t len=sizeof(struct sockaddr_in);
-    recvData_t * recvData;
-    u_size header_size;
     void * ret;
     char * dir;
     short port;
     
+    if( (ret=calloc(1,UDP_MTU))==NULL )
+	return NULL;
+
     memset(&sendAddress,0x0,sizeof(struct sockaddr_in));
+    if(recvfrom(socketFD,ret,UDP_MTU,0,(struct sockaddr *)&sendAddress,&len)<0)
+	return NULL;
+    
 
-    if(recvfrom(socketFD,&header_size,sizeof(u_size),0,(struct sockaddr *)&sendAddress,&len)<0)
-    {
-	perror("ACA: ");
-	    return NULL;
-    }
-    printf("header_size: %ld\n",header_size);
-    if( (ret=calloc(1,header_size)) == NULL )
-		return NULL;
-    
-    if(recvfrom(socketFD,ret,header_size,0,(struct sockaddr *)&sendAddress,&len)<0)
-	    return NULL;
-    
-    if( (recvData=calloc(1,sizeof(recvData_t)))!=NULL )
-    {
-	dir=inet_ntoa(sendAddress.sin_addr);
-	printf("%s\n",dir);
-	port=ntohs(sendAddress.sin_port);
-	recvData->port=port;
-	strncpy(recvData->dir_inet,dir,DIR_INET_LEN);
-	recvData->data=ret;
-    }
-    return recvData;
-    
-    /*void * ret;
-	u_size *header_size;
-	
-	if( (header_size = malloc(sizeof(u_size))) == NULL )
-		return NULL;
-	
-	if(recv(socketFD,header_size,sizeof(u_size),0)<0)
-	    return NULL;
-	
-	if( (ret=calloc(1,*header_size)) == NULL )
-		return NULL;
-	
-	if(recv(socketFD,ret,*header_size,0)<0)
-	    return NULL;
-	
-	free(header_size);*/
+    dir=inet_ntoa(sendAddress.sin_addr);
+    printf("%s\n",dir);
+    port=ntohs(sendAddress.sin_port);
+    sender->port=port;
+    strncpy(sender->dir_inet,dir,DIR_INET_LEN);
+
+
+    return ret;
 }
 
-void
-FreeRecvData(recvData_t * data)
-{
-    free(data->data);
-    free(data);
-}
 void 
 CloseUDP(int socketFD)
 {
