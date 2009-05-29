@@ -214,13 +214,13 @@ void * receiveTCP(int socketFD)
 	if( (header_size = malloc(sizeof(u_size))) == NULL )
 		return NULL;
 	
-	if(recv(socketFD,header_size,sizeof(u_size),0)<0)
+	if(recv(socketFD,header_size,sizeof(u_size),MSG_WAITALL)<0)
 	    return NULL;
 	
 	if( (ret=calloc(1,*header_size)) == NULL )
 		return NULL;
 	
-	if(recv(socketFD,ret,*header_size,0)<0)
+	if(recv(socketFD,ret,*header_size,MSG_WAITALL)<0)
 	    return NULL;
 	
 	free(header_size);
