@@ -46,6 +46,9 @@ static status SendMovie(char *path,char *ip,char *port);
 /*                      GetPack(data)                       */
 /************************************************************/
 
+static u_size GetPaymentLocationPack(void * ack_data,
+				      payment_server_t * ack);
+
 static u_size GetHeaderPack(void *data, header_t *header);
 
 static u_size GetLoginPack(void *data, login_t *log);
@@ -61,10 +64,14 @@ static u_size GetRequest(void *data, request_t * request);
 /*                   GetData(pack)                          */
 /************************************************************/
 
-static u_size GetDownloadHeaderData( download_header_t pack, 
-									void **data_ptr);
+static u_size GetPaymentRequestData(server_request_t req,
+					void ** req_data);
 
-static u_size GetDownloadData( download_t pack, void **data_ptr);
+static u_size GetDownloadHeaderData( download_header_t pack, 
+					void **data_ptr);
+
+static u_size GetDownloadData( download_t pack,
+					void **data_ptr);
 
 
 /************************************************************/
@@ -580,6 +587,10 @@ SendMovie(char *path,char *ip,char *port)
 	return OK;
 }
 
+
+
+
+
 static payment_server_t
 SendPaymentServerLocationRequest( char *name )
 {
@@ -591,23 +602,41 @@ SendPaymentServerLocationRequest( char *name )
 	payment_server_t ack;
 	host_t lookup_server;
 	
-	//req_size = GetPaymentRequestData( req, req_data);
+	req_size = GetPaymentRequestData( req, &req_data);
 	
 	socket = prepareUDP("127.0.0.1", "1051");
-	
-	
+	lookup_server.port=(unsigned short)atoi(PLS_PORT);
+	strncpy(lookup_server.dir_inet,PLS_IP,DIR_INET_LEN);
 	
 	sendUDP(socket, req_data, lookup_server);
+
  	ack_data = receiveUDP(socket, &lookup_server);
 	
-	//GetPaymentLocationPack(ack_data,&ack);
+	GetPaymentLocationPack(ack_data,&ack);
 		
 	return ack;
 }
-				
+
+
 /*******************************************************************************************************/
 /*                                struct pack = GetPack(data)                                          */
 /*******************************************************************************************************/
+
+static u_size
+GetPaymentLocationPack(void * ack_data,payment_server_t * ack)
+{
+    u_size pos=0;
+    memmove(ack->name,ack_data,MAX_SERVER_LEN);
+    pos+=MAX_SERVER_LEN;
+    memmove(ack->host,ack_data+pos,MAX_HOST_LEN);
+    pos+=MAX_HOST_LEN;
+    memmove(ack->port,ack_data+pos,MAX_PORT_LEN);
+    pos+=MAX_PORT_LEN;
+    memmove(ack->key,ack_data+pos,MAX_SERVER_KEY);
+    pos+=MAX_SERVER_KEY;
+    
+    return pos;
+}
 
 static u_size
 GetHeaderPack(void *data, header_t *header)
@@ -688,6 +717,18 @@ GetNewUserPack(void *data, client_t *client)
 /*******************************************************************************************************/
 /*                                          GetData(pack)                                              */
 /*******************************************************************************************************/
+static u_size
+GetPaymentRequestData(server_request_t req,void ** req_data)
+{
+    u_size pos;
+    if( (*req_data=calloc(1,UDP_MTU))==NULL )
+	return 0;
+
+    memmove(*req_data,req.name,strlen(req.name));
+    pos+=MAX_SERVER_LEN;
+
+    return UDP_MTU;
+}
 
 static u_size
 GetDownloadHeaderData( download_header_t pack, void **data_ptr)
