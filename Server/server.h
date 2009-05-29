@@ -14,6 +14,10 @@
 
 #define PORT_SERVER   "1044"
 
+#define PLS_IP "127.0.0.1"
+
+#define PLS_PORT "1067"
+
 typedef struct{
 	movie_t movie;
 	char path[MAX_PATH_LEN];	
