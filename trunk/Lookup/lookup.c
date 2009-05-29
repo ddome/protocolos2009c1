@@ -23,6 +23,9 @@
 /* Lista con los servers disponibles */
 LIST payment_servers;
 
+/* GetData(pack) */
+u_size GetAckData(payment_server_t pack,void **data_ptr);
+
 status 
 InitLookup(void)
 {
@@ -35,12 +38,13 @@ StartLookup(void)
 {	
 	int socket;
 	void *data;
+	host_t dest;
 	socket = prepareUDP("127.0.0.1", "1060");
 	
 	while(1) {
 		
-		data = receiveUDP(socket);
-		if( Session(data,socket) == FATAL_ERROR )
+		data = receiveUDP(socket,&dest);
+		if( Session(data,socket,dest) == FATAL_ERROR )
 			exit(EXIT_FAILURE);	
 	}	
 	
@@ -57,14 +61,20 @@ EndLookup(void)
 /* Atencion de pedidos */
 
 status
-Session(void *data,int socket)
+Session(void *data,int socket,host_t dest)
 {
 	server_request_t req;
 	payment_server_t *ack;
+	void *ack_data;
+	u_size ack_size;
 	
+	/* GetPack(data) */
+	memmove(req.name,data,MAX_SERVER_LEN);
 	
 	ack = GetServer(req.name);
-	sendUDP
+	ack_size = GetAckData(*ack,ack_data);
+	
+	sendUDP(socket,ack_data,dest);
 	return OK;
 }
 
@@ -89,3 +99,29 @@ GetServer(char *server_name)
 {
 	return list_get(payment_servers, server_name);
 }
+
+/* GetData(pack) */
+
+u_size
+GetAckData(payment_server_t pack,void **data_ptr)
+{
+	u_size pos;
+	void *data;
+
+	if( (data=malloc(MAX_SERVER_LEN+MAX_HOST_LEN
+					 +MAX_PORT_LEN+MAX_SERVER_KEY)) == NULL )
+		return -1;
+	
+	pos = 0;
+	memmove(data, pack.name, MAX_SERVER_LEN);
+	pos += MAX_SERVER_LEN;
+	memmove(data, pack.host, MAX_HOST_LEN);
+	pos += MAX_HOST_LEN;
+	memmove(data, pack.port, MAX_PORT_LEN);
+	pos += MAX_PORT_LEN;
+	memmove(data, pack.key, MAX_SERVER_KEY);
+	pos += MAX_SERVER_KEY;
+		
+	return pos;
+}
+

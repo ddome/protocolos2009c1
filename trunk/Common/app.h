@@ -131,7 +131,7 @@ typedef struct {
 typedef struct {
 	char name[MAX_SERVER_LEN];
 	char host[MAX_HOST_LEN];
-	char port[MAX_HOST_LEN];
+	char port[MAX_PORT_LEN];
 	char key[MAX_SERVER_KEY];
 } payment_server_t;
 
