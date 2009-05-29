@@ -26,7 +26,7 @@
 #define MAX_SERVER_LEN 30
 #define MAX_SERVER_KEY 10
 
-#define _FILE_SIZE_ 1000
+#define _FILE_SIZE_ 1000L
 
 /* Codigos del pedido (opCode) */
 
