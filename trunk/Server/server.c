@@ -563,7 +563,7 @@ SendMovie(char *path,char *ip,char *port)
 		to_send = malloc(header_size+bytes_read);
 		memmove(to_send,header_data, header_size);
 		memmove(to_send+header_size, data, bytes_read);
-		num = sendTCP(socket,to_send,sizeof(u_size)+bytes_read);
+		num = sendTCP(socket,to_send,header_size+bytes_read);
 			
 		fprintf(stderr,"TCP %d\n", num);
 		

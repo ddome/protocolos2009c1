@@ -440,7 +440,7 @@ ListenMovie(FILE *fd,char *port)
 	u_size header_size;
 	
 	/* Preparo el puerto que va a escuchar la conexion */
-	if( (passive_s=prepareTCP(HOST_DOWNLOAD,port,prepareServer)) < 0 ) {
+	if( (passive_s=prepareTCP(HOST_CLIENT,port,prepareServer)) < 0 ) {
 		return FATAL_ERROR;
 	}	
 	if( (listenTCP(passive_s,10)) < 0 ) {
@@ -449,7 +449,7 @@ ListenMovie(FILE *fd,char *port)
 	
 	/* Mando la senial al server pidiendo el inicio de la descarga */
 	strcpy(start.port,port);
-	strcpy(start.ip,HOST_DOWNLOAD);
+	strcpy(start.ip,HOST_CLIENT);
 	
 	size = GetDownloadStartData(start, &data);	
 	if( SendSignal(__DOWNLOAD_START_OK__, data, size) == ERROR )
@@ -463,7 +463,7 @@ ListenMovie(FILE *fd,char *port)
 		/* Recibo un paquete */
 		packet = receiveTCP(ssock);
 		header_size = GetDownloadPack(packet,&header);
-		//fprintf(stderr,"caca: (%ld) (%ld)\n",header.n_packet,n_packet);
+		fprintf(stderr,"caca: (%ld) (%ld)\n",header.n_packet,n_packet);
 		/* Lo bajo a disco */
 		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
 		/* Verifico la cantidad total de paquetes a descargar */
