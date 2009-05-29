@@ -13,7 +13,7 @@
 #include<netdb.h>
 
 /* Definir el tamaño maximo de los datos a mandar y a recibir.*/
-#define UDP_MTU 1
+#define UDP_MTU 300
 
 #define DIR_INET_LEN 1024
 
@@ -27,8 +27,6 @@ typedef struct{
     unsigned short port;
     char dir_inet[DIR_INET_LEN+1];
 }host_t;
-
-
 
 int prepareUDP(const char * host,const char * port);
 

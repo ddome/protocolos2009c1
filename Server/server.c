@@ -18,6 +18,7 @@
 #include "client_ldap.h"
 #include "server.h"
 #include "../Common/TCPLib.h"
+#include "../Common/UDPLib.h"
 #include "hashADT.h"
 #include "../Common/des/include/encrypt.h"
 #include "../Common/fileHandler.h"
@@ -560,13 +561,13 @@ SendMovie(char *path,char *ip,char *port)
 		header.n_packet = i;
 		header_size = GetDownloadData(header, &header_data);
 		to_send = malloc(header_size+bytes_read);
-		memmove(to_send, header_data, header_size);
-		memmove(to_send+header_size, data, bytes_read);;
-		num = sendTCP(socket, to_send,bytes_read+header_size) < 0;
+		memmove(to_send,header_data, header_size);
+		memmove(to_send+header_size, data, bytes_read);
+		num = sendTCP(socket,to_send,sizeof(u_size)+bytes_read);
 			
 		fprintf(stderr,"TCP %d\n", num);
 		
-		sleep(1);
+		//sleep(1);
 		
 		free(data);
 		free(header_data);
@@ -579,6 +580,31 @@ SendMovie(char *path,char *ip,char *port)
 	return OK;
 }
 
+static payment_server_t
+SendPaymentServerLocationRequest( char *name )
+{
+	server_request_t req;
+	void *req_data;
+	u_size req_size;
+	int socket;
+	void *ack_data;
+	payment_server_t ack;
+	host_t lookup_server;
+	
+	//req_size = GetPaymentRequestData( req, req_data);
+	
+	socket = prepareUDP("127.0.0.1", "1051");
+	
+	
+	
+	sendUDP(socket, req_data, lookup_server);
+ 	ack_data = receiveUDP(socket, &lookup_server);
+	
+	//GetPaymentLocationPack(ack_data,&ack);
+		
+	return ack;
+}
+				
 /*******************************************************************************************************/
 /*                                struct pack = GetPack(data)                                          */
 /*******************************************************************************************************/
