@@ -42,6 +42,8 @@ static status UserDelete(char *user,char *passwd);
 
 static status SendMovie(char *path,char *ip,char *port);
 
+static payment_server_t SendPaymentServerLocationRequest( char *name );
+
 /************************************************************/
 /*                      GetPack(data)                       */
 /************************************************************/
@@ -587,10 +589,6 @@ SendMovie(char *path,char *ip,char *port)
 	return OK;
 }
 
-
-
-
-
 static payment_server_t
 SendPaymentServerLocationRequest( char *name )
 {
@@ -602,9 +600,9 @@ SendPaymentServerLocationRequest( char *name )
 	payment_server_t ack;
 	host_t lookup_server;
 	
-	req_size = GetPaymentRequestData( req, &req_data);
-	
-	socket = prepareUDP("127.0.0.1", "1051");
+	strcpy(req.name,name);
+	req_size = GetPaymentRequestData( req, &req_data);	
+	socket = prepareUDP("127.0.0.1", "1061");
 	lookup_server.port=(unsigned short)atoi(PLS_PORT);
 	strncpy(lookup_server.dir_inet,PLS_IP,DIR_INET_LEN);
 	
@@ -613,6 +611,8 @@ SendPaymentServerLocationRequest( char *name )
  	ack_data = receiveUDP(socket, &lookup_server);
 	
 	GetPaymentLocationPack(ack_data,&ack);
+	
+	fprintf(stderr,"%s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);
 		
 	return ack;
 }

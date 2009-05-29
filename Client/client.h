@@ -21,7 +21,7 @@
 #define HOST_SERVER  "127.0.0.1"
 
 #define PORT_CLIENT "1050"
-#define PORT_SERVER "1044"
+#define PORT_SERVER "1047"
 
 typedef enum client_login_status { LOGIN_USER_IS_LOG=-4,LOGIN_CONNECT_ERROR=-3,LOGIN_USER_INVALID =-2, LOGIN_PASS_INVALID=-1, USER_LOGIN_OK=1 } client_login_status;
 

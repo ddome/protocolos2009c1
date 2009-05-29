@@ -11,10 +11,11 @@
 #define  __LOOKUP_H__
 
 #include "../Common/defines.h"
+#include "../Common/UDPLib.h"
 
 status  InitLookup(void);
 status  StartLookup(void);
 void    EndLookup(void);
-
+status Session(void *data,int socket,host_t dest);
 
 #endif

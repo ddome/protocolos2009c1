@@ -12,11 +12,11 @@
 
 #define HOST_SERVER "127.0.0.1"
 
-#define PORT_SERVER   "1044"
+#define PORT_SERVER   "1047"
 
 #define PLS_IP "127.0.0.1"
 
-#define PLS_PORT "1067"
+#define PLS_PORT "1060"
 
 typedef struct{
 	movie_t movie;
