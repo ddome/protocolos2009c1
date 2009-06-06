@@ -21,9 +21,11 @@ static unsigned long SendRequest(u_size op_code,u_size total_objects,void *packe
 
 static download_header_t SendDownloadRequest(void *packet, u_size size);
 
-static status StartDownload(FILE *fd);
+static buy_movie_ticket_t SendBuyRequest(void *packet, u_size size);
 
-static status ListenMovie(FILE *fd,char *port);
+static status StartDownload(FILE *fd,char *ticket);
+
+static status ListenMovie(FILE *fd,char *port,char *ticket);
 
 static status ProcessDownload(void *packet);
 
@@ -39,11 +41,15 @@ static u_size GetRequestData( request_t pack, void **data_ptr);
 
 static u_size GetDownloadStartData( download_start_t pack, void **data_ptr);
 
+static u_size GetBuyData( buy_movie_request_t pack, void **data_ptr);
+
 /* GetPack(data) */
 
 static u_size GetDownloadHeaderPack( void *data, download_header_t *pack );
 
 static u_size GetDownloadPack( void *data, download_t *pack);
+
+static u_size GetBuyTicketPack( void *data, buy_movie_ticket_t *pack);
 
 status 
 InitClient(void)
@@ -168,6 +174,56 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 	return ret;
 }
 
+client_buy_movie_status
+UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, char *ticket_ret)
+{
+	buy_movie_request_t buy;
+	void *buy_data;
+	u_size buy_size;
+	buy_movie_ticket_t ticket;
+	client_buy_movie_status ret;
+	
+	/* Paquete de pedido */
+	strcpy(buy.movie_name,movie_name);
+	strcpy(buy.pay_name, pay_name);
+	strcpy(buy.pay_user, pay_user);
+	strcpy(buy.pay_passwd, pay_passwd);	
+	buy_size = GetBuyData(buy,&buy_data);
+	
+	/* Mando el pedido */
+	ticket = SendBuyRequest( buy_data, buy_size);	
+	/* Proceso la respuesta */
+	switch (ticket.ret_code) {
+		case __BUY_MOVIE_OK__:
+			ret = BUY_OK;
+			/* Devuelvo el ticket generado para imprimir en pantalla */
+			strcpy(ticket_ret,ticket.ticket);
+			break;
+		case __USER_IS_NOT_LOG__:
+			ret = BUY_USER_NOT_LOG;
+			/* El usuario debe loguearse devuelta */
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
+			break;
+		case __USER_ACCESS_DENY__:
+			ret = BUY_ACCES_DENY;
+			/* El usuario debe loguearse devuelta */
+			if( strcmp(log_user, "anonimo") != 0 )
+				strcpy(log_user, "anonimo");
+			break;
+		case __BUY_MOVIE_USER_ERROR__:
+			ret = BUY_USER_ERROR;
+			break;
+		case __BUY_MOVIE_PASS_ERROR__:
+			ret = BUY_PASS_ERROR;
+			break;
+		default:
+			ret = BUY_CONNECT_ERROR;
+			break;
+	}
+	return ret;
+}
+
 client_user_reg
 UserRegistration(char *user, char *passwd, char *rep_passwd, char *mail, char *desc, int level)
 {
@@ -264,6 +320,7 @@ UserDownload(char * ticket)
 	
 	strcpy(request.ticket,ticket);
 	size = GetRequestData(request,&data);
+	fprintf(stderr, "%s\n",data);
 	/* Mando el pedido */
 	download_info = SendDownloadRequest(data, size);
 	free(data);
@@ -290,7 +347,7 @@ UserDownload(char * ticket)
 			if( (fd = CreateFile(download_info.title,download_info.size)) == NULL )
 				ret = DOWNLOAD_ERROR;
 			/* Comienzo a descargar */
-			else if( StartDownload(fd) == ERROR )
+			else if( StartDownload(fd,ticket) == ERROR )
 				ret = DOWNLOAD_ERROR;
 			break;
 		default:
@@ -353,16 +410,59 @@ SendDownloadRequest(void *packet, u_size size)
 	header_t header;
 	void *to_send;
 	int socket;
-	download_header_t download_info,*download_info_ptr;
+	download_header_t download_info;
 	void *data;
 	u_size header_size;
 	void *ack_data;
-	u_size ack_size;
 	
 	download_info.ret_code = CONNECT_ERROR;
 	
 	/* Tipo de pedido */
 	header.opCode = __DOWNLOAD__;
+	header.total_objects = 1;
+	/* Identificacion del usuario */
+	strcpy(header.user,log_user);
+	strcpy(header.passwd,log_passwd);	
+	header_size = GetHeaderData(header, &data);	
+	/* Concateno los paquetes header y pedido */
+	if( (to_send = malloc(header_size+size)) == NULL )
+		return download_info;	
+	memmove(to_send, data, header_size);
+	memmove(to_send+header_size, packet, size);
+	free(data);
+	/* Me conecto al servidor */
+	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+		free(to_send);
+		return download_info;
+	}
+	/* Mando el paquete */
+	sendTCP(socket, to_send,header_size+size);
+	free(to_send);
+	/* Espero por la respuesta del servidor */
+	ack_data = receiveTCP(socket);	
+	GetDownloadHeaderPack(ack_data, &download_info);
+	/* Cierro la conexion????? */
+	close(socket);
+	return download_info;
+	
+}
+
+static buy_movie_ticket_t
+SendBuyRequest(void *packet, u_size size)
+{
+	header_t header;
+	void *to_send;
+	int socket;
+	buy_movie_ticket_t download_info;
+	void *data;
+	u_size header_size;
+	void *ack_data;
+	u_size ack_size;
+	
+	download_info.ret_code = BUY_ERROR;
+	
+	/* Tipo de pedido */
+	header.opCode = __BUY_MOVIE__;
 	header.total_objects = 1;
 	/* Identificacion del usuario */
 	strcpy(header.user,log_user);
@@ -383,11 +483,10 @@ SendDownloadRequest(void *packet, u_size size)
 	free(to_send);
 	/* Espero por la respuesta del servidor */
 	ack_data = receiveTCP(socket);	
-	GetDownloadHeaderPack(ack_data, &download_info);
+	GetBuyTicketPack(ack_data, &download_info);
 	/* Cierro la conexion????? */
 	close(socket);
-	return download_info;
-	
+	return download_info;	
 }
 
 static status
@@ -426,7 +525,7 @@ SendSignal(u_size op_code, void *packet, u_size size)
 }
 
 static status
-ListenMovie(FILE *fd,char *port)
+ListenMovie(FILE *fd,char *port,char *ticket)
 {
 	int passive_s,ssock;
 	unsigned long total_packets;
@@ -450,6 +549,7 @@ ListenMovie(FILE *fd,char *port)
 	/* Mando la senial al server pidiendo el inicio de la descarga */
 	strcpy(start.port,port);
 	strcpy(start.ip,HOST_CLIENT);
+	strcpy(start.ticket,ticket);
 	
 	size = GetDownloadStartData(start, &data);	
 	if( SendSignal(__DOWNLOAD_START_OK__, data, size) == ERROR )
@@ -482,13 +582,13 @@ ListenMovie(FILE *fd,char *port)
 }
 
 static status 
-StartDownload(FILE *fd)
+StartDownload(FILE *fd,char *ticket)
 {	
 	/* Creo un proceso que se encargue de recibir los paquetes de descarga */
 	switch( fork() ) {
 		case 0:			
 			/* Falta incrementar el puerto para atender multiples conexiones */
-			if( (ListenMovie(fd,"1050")) != OK ) {
+			if( (ListenMovie(fd,"1050",ticket)) != OK ) {
 			   exit(EXIT_FAILURE);
 			}
 			fclose(fd);
@@ -578,28 +678,58 @@ GetRequestData( request_t pack, void **data_ptr)
 {
 	void *data;
 	
-	if( (data=malloc(20)) == NULL )
+	if( (data=malloc(MAX_TICKET_LEN)) == NULL )
 		return -1;
 	
-	memmove(data, pack.ticket, 20);
+	memmove(data, pack.ticket, MAX_TICKET_LEN);
 	
 	*data_ptr = data;
-	return 20;
+	return MAX_TICKET_LEN;
 }
 
 static u_size
 GetDownloadStartData( download_start_t pack, void **data_ptr) 
 {
 	void *data;
+	u_size pos;
 	
-	if( (data=malloc(MAX_HOST_LEN + MAX_PORT_LEN)) == NULL )
+	if( (data=malloc(MAX_HOST_LEN + MAX_PORT_LEN + MAX_TICKET_LEN)) == NULL )
 		return -1;
 	
+	pos = 0;
 	memmove(data, pack.ip, MAX_HOST_LEN);
-	memmove(data + MAX_HOST_LEN, pack.port, MAX_PORT_LEN);
+	pos += MAX_HOST_LEN;
+	memmove(data + pos, pack.port, MAX_PORT_LEN);
+	pos += MAX_PORT_LEN;
+	memmove(data + pos, pack.port, MAX_TICKET_LEN);
+	pos += MAX_TICKET_LEN;	
 	
 	*data_ptr = data;
-	return MAX_HOST_LEN + MAX_PORT_LEN;
+	return pos;
+}
+
+
+static u_size
+GetBuyData( buy_movie_request_t pack, void **data_ptr) 
+{
+	void *data;
+	u_size pos;
+	
+	if( (data=malloc(MAX_MOVIE_LEN+MAX_SERVER_LEN+MAX_USER_LEN+MAX_USER_PASS)) == NULL )
+		return -1;
+	
+	pos = 0;
+	memmove(data, pack.movie_name, MAX_MOVIE_LEN);
+	pos += MAX_MOVIE_LEN;
+	memmove(data + pos, pack.pay_name, MAX_SERVER_LEN);
+	pos += MAX_SERVER_LEN;
+	memmove(data + pos, pack.pay_user, MAX_USER_LEN);
+	pos += MAX_USER_LEN;
+	memmove(data + pos, pack.pay_passwd, MAX_USER_PASS);
+	pos += MAX_USER_PASS;
+	
+	*data_ptr = data;
+	return pos;
 }
 
 static u_size
@@ -623,6 +753,20 @@ GetDownloadHeaderPack( void *data, download_header_t *pack )
 }
 
 static u_size
+GetBuyTicketPack( void *data, buy_movie_ticket_t *pack)
+{
+	u_size pos;
+	
+	pos = 0;
+	memmove(&(pack->ret_code), data, sizeof(unsigned long) );
+	pos+=sizeof(sizeof(unsigned long));
+	memmove(pack->ticket, data + pos, MAX_TICKET_LEN );
+	pos+=MAX_TICKET_LEN;
+	
+	return pos;
+}
+
+static u_size
 GetDownloadPack( void *data, download_t *pack)
 {
 	u_size pos;
@@ -637,3 +781,4 @@ GetDownloadPack( void *data, download_t *pack)
 	
 	return pos;
 }
+

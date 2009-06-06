@@ -26,6 +26,8 @@
 #define MAX_SERVER_LEN 30
 #define MAX_SERVER_KEY 10
 
+#define MAX_TICKET_LEN 20
+
 #define _FILE_SIZE_ 10000000L
 
 /* Codigos del pedido (opCode) */
@@ -61,6 +63,13 @@
 #define __DOWNLOAD_START__		17L
 #define __DOWNLOAD_ERROR__		18L
 #define __DOWNLOAD_START_OK__	19L
+
+/* Codigos de comprar pelicula */
+#define __BUY_MOVIE__		    20L
+#define __BUY_MOVIE_OK__		    21L
+#define __BUY_MOVIE_USER_ERROR__ 22L
+#define __BUY_MOVIE_PASS_ERROR__ 23L
+#define __BUY_MOVIE_ERROR__		24L
 
 /* Estructuras del protocolo de aplicacion */
 
@@ -100,12 +109,13 @@ typedef struct {
 
 /* Descarga */
 typedef struct {
-	char ticket[20];
+	char ticket[MAX_TICKET_LEN];
 } request_t;
 
 typedef struct {
 	char ip[MAX_HOST_LEN];
 	char port[MAX_PORT_LEN];
+	char ticket[MAX_TICKET_LEN];
 } download_start_t;
 
 typedef struct {
@@ -134,6 +144,19 @@ typedef struct {
 	char port[MAX_PORT_LEN];
 	char key[MAX_SERVER_KEY];
 } payment_server_t;
+
+/* Compra de peliculas */
+typedef struct {
+	char movie_name[MAX_MOVIE_LEN];
+	char pay_name[MAX_SERVER_LEN];
+	char pay_user[MAX_USER_LEN];
+	char pay_passwd[MAX_USER_PASS];
+} buy_movie_request_t;
+
+typedef struct {
+	unsigned long ret_code;
+	char ticket[MAX_TICKET_LEN];
+} buy_movie_ticket_t;
 
 /* Respuesta */
 typedef struct {

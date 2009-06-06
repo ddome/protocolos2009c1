@@ -188,7 +188,7 @@ int sendTCP(int socketFD,void * data,size_t size)
 
 	if(send(socketFD,toSend,sizeof(u_size)+size,0)==-1);
 	{
-		perror("Send: ");
+		//perror("Send: ");
 		//Agregar syslog
 		switch(errno)
 		{

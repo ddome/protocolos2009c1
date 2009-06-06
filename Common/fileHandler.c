@@ -6,8 +6,6 @@
 
 #include "fileHandler.h"
 
-
-
 unsigned long 
 SplitFile( char *path, unsigned long packet_size )
 {
