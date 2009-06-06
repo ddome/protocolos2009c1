@@ -249,6 +249,49 @@ static int Download_Command(scannerADT scanner, void * data)
     return retValue;    
 }
 
+static int BuyMovie_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+    char * aux1,*aux2,*aux3,*aux4;
+	char ticket[20];
+	
+    if(MoreTokensExist(scanner)) {
+		aux1=ReadToken(scanner);
+		aux2=ReadToken(scanner);
+		aux3=ReadToken(scanner);
+		aux4=ReadToken(scanner);
+		
+		switch( UserBuyMovie(aux1,aux2,aux3,aux4,ticket) ) {
+				
+			case BUY_ERROR:
+				printf("Se produjo un error al intentar comprar la pelicula\n");
+				break;
+			case BUY_OK:
+				printf("Ticket generado:%s\n",ticket);
+				break;
+			case BUY_ACCES_DENY:
+				printf("El usuario ha sido deslogueado desde otra terminal\n");
+				if( strcmp(user, "anonimo") != 0 )
+					strcpy(user, "anonimo");
+				break;
+			case BUY_USER_NOT_LOG:
+				printf("Debe estar logueado para comprar peliculas\n");
+				if( strcmp(user, "anonimo") != 0 )
+					strcpy(user, "anonimo");
+				break;
+				
+			default:
+				printf("Se ha producido al efectuar la compra\n");
+		}	
+		free(aux1);
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
+
 
 static int ShowCommands(scannerADT scanner, void * data)
 {
@@ -258,6 +301,7 @@ static int ShowCommands(scannerADT scanner, void * data)
 	printf("new user password rep_password mail description level\n");
 	printf("password newpassword rep_newpassword\n");
 	printf("download ticket\n");
+	printf("buy movie_name pay_server_name pay_server_user pay_server_password\n");
 	printf("exit\n");
 	printf("logout\n");
 
@@ -272,6 +316,7 @@ static void LoadTree(treeADT tree)
     InsertExpression(tree, "login",  Login_Command);
 	InsertExpression(tree, "new",  NewAccount_Command);
 	InsertExpression(tree, "password",  ChangePassword_Command);
+	InsertExpression(tree, "buy",  BuyMovie_Command);
 	InsertExpression(tree, "download",  Download_Command);
 	InsertExpression(tree, "logout",  Logout_Command);
     InsertExpression(tree, "help",   ShowCommands);

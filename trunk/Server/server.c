@@ -20,8 +20,12 @@
 #include "../Common/TCPLib.h"
 #include "../Common/UDPLib.h"
 #include "hashADT.h"
+#include "counter.h"
 #include "../Common/des/include/encrypt.h"
 #include "../Common/fileHandler.h"
+#include "database_handler.h"
+
+#define PAY_OK 1
 
 /* Variable global que guarda la conexion con el servidor LDAP */
 LDAP *ld;
@@ -31,6 +35,16 @@ int passive_s;
 
 /* Informacion de los usuarios online */
 hashADT users_online;
+
+/* Informacion de los tickets generados */
+hashADT tickets_generated;
+
+/* Informacion de los archivos disponibles */
+hashADT file_paths;
+
+/* Informacion de los tickets generados */
+COUNTER tickets_counter;
+
 
 /************************************************************/
 /*                    Static functions                      */
@@ -43,6 +57,20 @@ static status UserDelete(char *user,char *passwd);
 static status SendMovie(char *path,char *ip,char *port);
 
 static payment_server_t SendPaymentServerLocationRequest( char *name );
+
+static int PayMovie(char *pay_name,char *pay_user,char *pay_passwd);
+
+static char * MakeTicket(char *user,char *movie_name);
+
+static ticket_info_t * GetFileInfo(char *ticket);
+
+int TicketInfoComp( void * v1, void *v2 );
+
+int TicketHash( void *v, int size );
+
+int TicketSave(FILE *fd,void *data);
+
+void * TicketLoad(FILE *fd);
 
 /************************************************************/
 /*                      GetPack(data)                       */
@@ -67,13 +95,17 @@ static u_size GetRequest(void *data, request_t * request);
 /************************************************************/
 
 static u_size GetPaymentRequestData(server_request_t req,
-					void ** req_data);
+                                  void ** req_data);
 
 static u_size GetDownloadHeaderData( download_header_t pack, 
-					void **data_ptr);
+                                    void **data_ptr);
 
 static u_size GetDownloadData( download_t pack,
-					void **data_ptr);
+                                void **data_ptr);
+
+static u_size GetBuyMoviePack(void *data,buy_movie_request_t *buy);
+
+static u_size GetBuyTicketData( buy_movie_ticket_t pack, void **data_ptr);
 
 
 /************************************************************/
@@ -100,6 +132,20 @@ InitServer(void)
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",ret);
 		return FATAL_ERROR;
 	}
+	
+	/* Iniciar tablas de datos */
+	
+	/* Usuarios online */
+	users_online = NewHash(150, UsersComp, UsersHash,NULL,NULL);	
+	
+	/* Tickets generados asociados a una descarga */
+	tickets_generated = LoadHashTable(TICKETS_DATA_PATH, 150, TicketInfoComp, TicketHash, TicketSave, TicketLoad);
+	
+	/* Tickets generados asociados a un cliente en particular */
+	//file_paths = LoadHashTable(FILES_DATA_PATH, 150, TicketInfoComp, TicketHash, TicketSave, TicketLoad);
+	
+	/* Tickets disponibles */
+	tickets_counter = LoadCounter(TICKETS_FREE_PATH);
 		
 	return OK;
 }
@@ -112,9 +158,6 @@ StartServer(void)
 	fd_set rfds;
 	fd_set afds;	
 	int fd, nfds;
-	
-	/* Mantengo la informacion de los usuarios online */
-	users_online = NewHash(150, UsersComp, UsersHash);
 	
 	nfds = getdtablesize();
 	FD_ZERO(&afds);
@@ -182,6 +225,7 @@ Session(void *data,int socket)
 	request_t req;
 	download_start_t start;
 	u_size header_size;
+	buy_movie_request_t buy;
 	
 	
 	/* Levanto el header del paquete */	
@@ -206,10 +250,17 @@ Session(void *data,int socket)
 			fprintf(stderr,"Llego un pedido de --new-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserRegister(client,socket);
 			break;
+		case __BUY_MOVIE__:
+			/* Comprar pelicula */
+			fprintf(stderr,"Llego un pedido de --buymovie-- de user:%s passwd:%s\n",header.user,header.passwd);
+			GetBuyMoviePack(data+header_size,&buy);
+			return UserBuyMovie(buy,socket,header.user,header.passwd);
+			break;	
 		case __DOWNLOAD__:
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --download-- de user:%s passwd:%s\n",header.user,header.passwd);
 			GetRequest(data+header_size,&req);
+			fprintf(stderr,"--%s--\n",req.ticket);
 			return UserDownload(req,socket, header.user, header.passwd);
 			break;
 		case __DOWNLOAD_START_OK__:
@@ -350,6 +401,46 @@ UserRegister(client_t client,int socket)
 	return OK;
 }
 
+/* case __BUY_MOVIE__ */
+
+status
+UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
+{
+	buy_movie_ticket_t ack;
+	int ret = __BUY_MOVIE_OK__;
+	void *ack_data;
+	u_size ack_size;
+	
+	/* Me fijo si esta logueado */
+	if( strcmp(user, "anonimo") == 0 ) {
+		ret = __USER_IS_NOT_LOG__;
+	}
+	/* Control de la identidad del solicitante */
+	else if( !UserCanAcces(user, passwd) ) {
+		ret = __USER_ACCESS_DENY__;
+	}
+	if( ret == __BUY_MOVIE_OK__ ) {
+		if( PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd) == PAY_OK ) {
+			fprintf(stderr, "Aca llego\n");
+			strcpy(ack.ticket,MakeTicket(user,buy.movie_name));
+			fprintf(stderr, "Aca llego %s\n",ack.ticket);
+			ret = __BUY_MOVIE_OK__;
+		}
+		else {
+			ret = __BUY_MOVIE_ERROR__;
+		}
+		
+	}
+	/* Mando la respuesta */
+	ack.ret_code = ret;
+	ack_size = GetBuyTicketData(ack,&ack_data);
+		
+	sendTCP(socket, ack_data, ack_size);
+	
+	return OK;
+}
+
+
 /* case __DOWNLOAD__ */
 
 status
@@ -357,7 +448,7 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 {
 	int ret = __DOWNLOAD_START__;
 	download_header_t ack;
-	file_info_t file_info;
+	ticket_info_t *file_info;
 	u_size size;
 	void *data;
 	
@@ -369,16 +460,21 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	else if( !UserCanAcces(user, passwd) ) {
 		ret = __USER_ACCESS_DENY__;
 	}
+	
+	fprintf(stderr, "ACA LLEGO GUACHIN\n");
 	/* Busco la informacion del archivo, verifico permisos y nivel de descarga */
 	if( ret == __DOWNLOAD_START__ ) {
-		/*if( GetMovieInfo(req.ticket,&file_info) == -1 ) {
+		fprintf(stderr, "ACA TAMBIEN\n");
+		fprintf(stderr, "%s\n",req.ticket);
+		if( (file_info=GetFileInfo(req.ticket)) == NULL ) {
+			fprintf(stderr, "PASO ALGO FULERO FULERO\n");	
 			ret = __DOWNLOAD_ERROR__;
 		}
-		strcpy(ack.title,file_info.movie.name);
-		ack.size = file_info.movie.size;
-		 */
-		strcpy(ack.title,"SpiderMan");
-		ack.size = GetFileSize("test");
+		else {
+			fprintf(stderr, "ESTA TODO RE PIOLA\n");
+			strcpy(ack.title,file_info->path);
+			ack.size = GetFileSize(file_info->path);
+		}
 	}
 	/* Mando la respuesta */
 	ack.ret_code = ret;
@@ -393,9 +489,8 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 status
 UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 {		
-	file_info_t file_info;
-	
-	
+	ticket_info_t *file_info;
+		
 	fprintf(stderr,"Antes\n");
 	
 	/* Me fijo si esta logueado */
@@ -407,20 +502,19 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 		return OK;
 	}
 	/* Busco la informacion del archivo, verifico permisos y nivel de descarga */
-	/*if( GetMovieInfo(req.ticket,&file_info) == -1 ) {
+	if( (file_info=GetFileInfo(start.ticket)) == NULL ) {
+		/* Si no es valido no empiezo la descarga */
 		return OK;
-	}*/
-	
+	}
+
 	fprintf(stderr,"%s %s\n",start.ip,start.port);
 	
 	switch( fork() ) {
 		case 0:
-			/*SendMovie(file_info.path,start.ip,start.port);*/
-			
 			/* Espero a que se establezca la conexion */
-			sleep(2);
+			sleep(2); //Cambiar esto porque es muy villero
 			fprintf(stderr,"Empiezoooooo\n");
-			if( SendMovie("test",start.ip,start.port) != OK )
+			if( SendMovie(file_info->path,start.ip,start.port) != OK )
 				exit(EXIT_FAILURE);
 			else
 				exit(EXIT_SUCCESS);
@@ -460,33 +554,6 @@ UserLogout(int socket, char *user, char *passwd)
 	sendTCP(socket, &ack, sizeof(ack_t));   
 	
 	return OK;
-}
-
-/*******************************************************************************************************/
-/*                           Funciones de manejo de la tabla de hashing                               */
-/*******************************************************************************************************/
-
-int
-UsersComp( void *v1, void *v2 )
-{
-	login_t *c1=(login_t *)v1;
-	login_t *c2=(login_t *)v2;
-	return strcmp( c1->user, c2->user );
-}
-
-int
-UsersHash( void *v1, int size )
-{
-	int hash = 0;
-	login_t *c1 = (login_t *)v1;
-	int len  = strlen(c1->user);
-	int i;
-	
-	for(i=0;i<len;i++){
-		hash += c1->user[i];
-	}
-	
-	return hash % size;
 }
 
 /*******************************************************************************************************/
@@ -576,8 +643,6 @@ SendMovie(char *path,char *ip,char *port)
 			
 		fprintf(stderr,"TCP %d\n", num);
 		
-		//sleep(1);
-		
 		free(data);
 		free(header_data);
 		free(to_send);
@@ -602,7 +667,7 @@ SendPaymentServerLocationRequest( char *name )
 	
 	strcpy(req.name,name);
 	req_size = GetPaymentRequestData( req, &req_data);	
-	socket = prepareUDP("127.0.0.1", "1061");
+	socket = prepareUDP(PLS_IP, PLS_PORT);
 	lookup_server.port=(unsigned short)atoi(PLS_PORT);
 	strncpy(lookup_server.dir_inet,PLS_IP,DIR_INET_LEN);
 	
@@ -615,6 +680,57 @@ SendPaymentServerLocationRequest( char *name )
 	fprintf(stderr,"%s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);
 		
 	return ack;
+}
+
+static int
+PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
+{
+	//payment_server_t location = SendPaymentServerLocationRequest(pay_name);
+		
+	return PAY_OK;
+}
+
+static char *
+MakeTicket(char *user,char *movie_name)
+{
+	ticket_info_t *ticket = malloc(sizeof(ticket_info_t));
+	unsigned int ticket_number;
+	char *ticket_string = malloc(MAX_TICKET_LEN);
+	
+	ticket_number = tickets_counter++;
+	SaveCounter(tickets_counter,TICKETS_FREE_PATH);
+	
+	sprintf(ticket_string, "10%d",ticket_number);
+	strcpy(ticket->path, "test"); // aca iria la funcion que busca la info de una tabla
+	strcpy(ticket->MD5, "fruta");
+	strcpy(ticket->ticket, ticket_string);
+	fprintf(stderr, "Inserte %s\n",ticket->ticket);
+	/* Inserto el ticket generado para su posterior uso */	
+	HInsert(tickets_generated, ticket);
+	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
+	
+	return ticket_string;
+}
+
+static ticket_info_t *
+GetFileInfo(char *ticket)
+{
+	ticket_info_t file_info;
+	ticket_info_t *file_ptr = malloc(sizeof(file_info_t));
+	int pos;	
+	
+	strcpy(file_info.ticket, ticket);
+	fprintf(stderr, "Voy a buscar --%s-- \n",file_info.ticket); 
+	if( (pos=Lookup(tickets_generated, &file_info)) == -1 ) {
+		fprintf(stderr, "No lo encontre carajo %d\n",pos);
+		return NULL;
+	}
+	fprintf(stderr, "Lo encontre y esta en %d\n",pos);
+	file_ptr=GetHElement(tickets_generated, pos);
+	
+	fprintf(stderr, "%s %s\n", file_ptr->ticket,file_ptr->path);
+	
+	return file_ptr;
 }
 
 
@@ -679,6 +795,8 @@ GetDownloadStartOK(void *data, download_start_t * download_start)
     pos+=MAX_HOST_LEN;
     memmove(download_start->port,data+pos,MAX_PORT_LEN);
     pos+=MAX_PORT_LEN;
+	memmove(download_start->port,data+pos,MAX_TICKET_LEN);
+    pos+=MAX_TICKET_LEN;
     
     return pos;
 }
@@ -688,8 +806,8 @@ GetRequest(void *data, request_t * request)
 {
     u_size pos;
     pos=0;
-    memmove(request->ticket,data,20);
-    pos+=20;
+    memmove(request->ticket,data,MAX_TICKET_LEN);
+    pos+=MAX_TICKET_LEN;
     
     return pos;
 }
@@ -711,6 +829,24 @@ GetNewUserPack(void *data, client_t *client)
 	memmove(&(client->level), data + pos , sizeof(unsigned char));
 	pos+=sizeof(unsigned char);
 	
+	return pos;
+}
+
+static u_size
+GetBuyMoviePack(void *data,buy_movie_request_t *buy)
+{
+	u_size pos;
+
+	pos = 0;
+	memmove(buy->movie_name, data, MAX_MOVIE_LEN);
+	pos+=MAX_MOVIE_LEN;
+	memmove(buy->pay_name, data + pos , MAX_SERVER_LEN);
+	pos+=MAX_SERVER_LEN;
+	memmove(buy->pay_user, data + pos , MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(buy->pay_passwd, data + pos , MAX_USER_PASS);
+	pos+=MAX_USER_PASS;
+
 	return pos;
 }
 
@@ -754,6 +890,29 @@ GetDownloadHeaderData( download_header_t pack, void **data_ptr)
 	pos+=sizeof(unsigned long);
 	memmove(data+pos, &(pack.size), sizeof(u_size));
 	pos+=sizeof(u_size);
+	
+	*data_ptr = data;
+	return size;
+	
+}
+
+static u_size
+GetBuyTicketData( buy_movie_ticket_t pack, void **data_ptr)
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = sizeof(unsigned long) + MAX_TICKET_LEN;
+	
+	if( (data=malloc(size)) == NULL )
+		return -1;
+	
+	pos=0;
+	memmove(data, &(pack.ret_code), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, pack.ticket, MAX_TICKET_LEN);
+	pos+=MAX_TICKET_LEN;
 	
 	*data_ptr = data;
 	return size;

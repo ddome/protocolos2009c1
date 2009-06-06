@@ -33,6 +33,7 @@ typedef enum client_logout_status { LOG_OUT_CONNECT_ERROR=-4, LOG_OUT_USER_NOT_L
 
 typedef enum client_download_status { DOWNLOAD_CONNECT_ERROR=-4, DOWNLOAD_USER_NOT_LOG=-3,DOWNLOAD_ACCES_DENY=-2,DOWNLOAD_ERROR=-1,DOWNLOAD_OK=1 } client_download_status;
 
+typedef enum client_buy_movie_status { BUY_PASS_ERROR=-6,BUY_USER_ERROR=-5,BUY_CONNECT_ERROR=-4, BUY_USER_NOT_LOG=-3,BUY_ACCES_DENY=-2,BUY_ERROR=-1,BUY_OK=1 } client_buy_movie_status;
 
 status InitClient(void);
 status StartClient(void);
@@ -47,6 +48,8 @@ client_user_reg UserRegistration(char *user, char *passwd, char *rep_passwd, cha
 client_logout_status UserLogout(void);
 
 client_download_status UserDownload(char * ticket);
+
+client_buy_movie_status UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, char *ticket_ret);
 
 void UserExit(void);
 

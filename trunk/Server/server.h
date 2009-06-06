@@ -16,12 +16,12 @@
 
 #define PLS_IP "127.0.0.1"
 
-#define PLS_PORT "1060"
+#define PLS_PORT "1061"
 
-typedef struct{
-	movie_t movie;
-	char path[MAX_PATH_LEN];	
-} file_info_t;
+#define TICKETS_DATA_PATH "tickets_data"
+
+#define TICKETS_FREE_PATH "tickets_free"
+
 
 /*************************************************************************/
 /*					     Manejo del servidor        				     */
@@ -48,6 +48,8 @@ status UserRegister(client_t client,int socket);
 status UserNewPasswd(login_t log,int socket, char *user,char *passwd);
 
 status UserLogout(int socket, char *user, char *passwd);
+
+status UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd);
 
 status UserDownload(request_t req,int socket,char *user,char *passwd);
 
