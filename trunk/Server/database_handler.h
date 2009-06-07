@@ -23,7 +23,7 @@
 
 #include "../Common/app.h"
 
-/* Estructura privada con la informacion de los tickets asociados a una descarga */
+/* Estructura con la informacion de los tickets asociados a una descarga */
 typedef struct {
 	char ticket[MAX_TICKET_LEN];
 	char path[MAX_PATH_LEN];
@@ -31,13 +31,20 @@ typedef struct {
 	unsigned char n_downloads;
 } ticket_info_t;
 
-/* Estructura privada con la informacion de los archivos */
+/* Estructura con la informacion de los archivos */
 typedef struct {
 	char name[MAX_MOVIE_LEN];
 	char path[MAX_PATH_LEN];
 	char MD5[M_SIZE];
-	unsigned char n_downloads;
 } file_info_t;
+
+/* Usuarios conectados */
+
+int UsersComp( void *v1, void *v2 );
+
+int UsersHash( void *v1, int size );
+
+/* Tickets generados */
 
 int TicketInfoComp( void * v1, void *v2 );
 
@@ -47,8 +54,15 @@ int TicketSave(FILE *fd,void *data);
 
 void * TicketLoad(FILE *fd);
 
-int UsersComp( void *v1, void *v2 );
+/* Peliculas disponibles */
 
-int UsersHash( void *v1, int size );
+void * FileInfoLoad(FILE *fd);
+
+int FileInfoSave(FILE *fd,void *data);
+
+int FileInfoHash( void *v, int size );
+
+int FileInfoComp( void * v1, void *v2 );
+
 
 #endif
