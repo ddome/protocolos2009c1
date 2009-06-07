@@ -22,9 +22,10 @@
 
 #define TICKETS_FREE_PATH "tickets_free"
 
+#define FILES_DATA_PATH "files_location"
 
 /*************************************************************************/
-/*					     Manejo del servidor        				     */
+/*		            Manejo del servidor                          */
 /*************************************************************************/
 
 
@@ -36,7 +37,7 @@ void EndServer(void);
 
 
 /*************************************************************************/
-/*					     Atencion de pedidos				             */
+/*                           Atencion de pedidos		 	 */
 /*************************************************************************/
 
 status Session(void *packet,int socket);

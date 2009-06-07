@@ -13,7 +13,7 @@ COMMON_SRC = Common
 DES_SRC = Common/des/source
 
 CLIENT_OBJ = client.o main.o Promt.o scannerADT.o tree.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o
-SERVER_OBJ = server.o main.o hashADT.o client_ldap.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o
+SERVER_OBJ = server.o main.o hashADT.o client_ldap.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o database_hanlder.o
 PL_OBJ = main.o lookup.o list.o UDPLib.o
 
 
@@ -44,6 +44,7 @@ all:
 	$(CC) $(CC_OP) hashADT.o $(SERVER_SRC)/hashADT.c
 	$(CC) $(CC_OP) main.o $(SERVER_SRC)/main.c
 	$(CC) $(CC_OP) client_ldap.o $(SERVER_SRC)/client_ldap.c
+	$(CC) $(CC_OP) database_hanlder.o $(SERVER_SRC)/database_handler.c
 	$(LD) $(LD_OP_SERVER) $(LD_OP) $(SERVER_NAME) $(SERVER_OBJ)
 
 	@-echo "Compilando el PaymentLookupServer."

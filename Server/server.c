@@ -62,15 +62,10 @@ static int PayMovie(char *pay_name,char *pay_user,char *pay_passwd);
 
 static char * MakeTicket(char *user,char *movie_name);
 
-static ticket_info_t * GetFileInfo(char *ticket);
+static ticket_info_t * GetTicketInfo(char *ticket);
 
-int TicketInfoComp( void * v1, void *v2 );
+static file_info_t * GetFileInfo(char *name);
 
-int TicketHash( void *v, int size );
-
-int TicketSave(FILE *fd,void *data);
-
-void * TicketLoad(FILE *fd);
 
 /************************************************************/
 /*                      GetPack(data)                       */
@@ -85,8 +80,7 @@ static u_size GetLoginPack(void *data, login_t *log);
 
 static u_size GetNewUserPack(void *data, client_t *client);
 
-static u_size GetDownloadStartOK(void *data, 
-								 download_start_t * download_start);
+static u_size GetDownloadStartOK(void *data, download_start_t * download_start);
 
 static u_size GetRequest(void *data, request_t * request);
 
@@ -117,13 +111,11 @@ InitServer(void)
 	int ret;
 	
 	/* Iniciar el servidor ldap */
-	
 	if( (ld=InitLdap()) == NULL ) {
 		return FATAL_ERROR;
 	}
 		
 	/* Iniciar TCP */
-	
 	if( (passive_s=prepareTCP(HOST_SERVER,PORT_SERVER,prepareServer)) < 0 ) {
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",passive_s);
 		return FATAL_ERROR;
@@ -133,7 +125,7 @@ InitServer(void)
 		return FATAL_ERROR;
 	}
 	
-	/* Iniciar tablas de datos */
+	/* Iniciacion de tablas de datos */
 	
 	/* Usuarios online */
 	users_online = NewHash(150, UsersComp, UsersHash,NULL,NULL);	
@@ -141,8 +133,8 @@ InitServer(void)
 	/* Tickets generados asociados a una descarga */
 	tickets_generated = LoadHashTable(TICKETS_DATA_PATH, 150, TicketInfoComp, TicketHash, TicketSave, TicketLoad);
 	
-	/* Tickets generados asociados a un cliente en particular */
-	//file_paths = LoadHashTable(FILES_DATA_PATH, 150, TicketInfoComp, TicketHash, TicketSave, TicketLoad);
+	/* Ubicacion de las peliculas dentro del file system */
+	file_paths = LoadHashTable(FILES_DATA_PATH, 150, FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
 	
 	/* Tickets disponibles */
 	tickets_counter = LoadCounter(TICKETS_FREE_PATH);
@@ -197,7 +189,7 @@ StartServer(void)
 				else {
 					return FATAL_ERROR;
 				}
-					
+					GetDownloadHeaderData
 			}
 		}
 	}	
@@ -410,6 +402,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	int ret = __BUY_MOVIE_OK__;
 	void *ack_data;
 	u_size ack_size;
+	char *aux_ticket;
 	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
@@ -421,15 +414,16 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	}
 	if( ret == __BUY_MOVIE_OK__ ) {
 		if( PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd) == PAY_OK ) {
-			fprintf(stderr, "Aca llego\n");
-			strcpy(ack.ticket,MakeTicket(user,buy.movie_name));
-			fprintf(stderr, "Aca llego %s\n",ack.ticket);
-			ret = __BUY_MOVIE_OK__;
+			if( (aux_ticket=MakeTicket(user,buy.movie_name)) == NULL )
+				ret = __BUY_MOVIE_INVALID__;	
+			else {
+				strcpy(ack.ticket,MakeTicket(user,buy.movie_name));
+				ret = __BUY_MOVIE_OK__;
+			}
 		}
 		else {
 			ret = __BUY_MOVIE_ERROR__;
-		}
-		
+		}	
 	}
 	/* Mando la respuesta */
 	ack.ret_code = ret;
@@ -480,7 +474,7 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	ack.ret_code = ret;
 	size = GetDownloadHeaderData(ack,&data);
 	sendTCP(socket, &ack, sizeof(download_header_t));
-
+MakeTicket(user,buy.movie_name)
 	return OK;
 }
 
@@ -502,7 +496,7 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 		return OK;
 	}
 	/* Busco la informacion del archivo, verifico permisos y nivel de descarga */
-	if( (file_info=GetFileInfo(start.ticket)) == NULL ) {
+	if( (file_info=GetTicketInfo(start.ticket)) == NULL ) {
 		/* Si no es valido no empiezo la descarga */
 		return OK;
 	}
@@ -696,15 +690,17 @@ MakeTicket(char *user,char *movie_name)
 	ticket_info_t *ticket = malloc(sizeof(ticket_info_t));
 	unsigned int ticket_number;
 	char *ticket_string = malloc(MAX_TICKET_LEN);
-	
+	file_info_t file;
+	/* Genero el ticket */
 	ticket_number = tickets_counter++;
-	SaveCounter(tickets_counter,TICKETS_FREE_PATH);
-	
+	SaveCounter(tickets_counter,TICKETS_FREE_PATH);	
 	sprintf(ticket_string, "10%d",ticket_number);
-	strcpy(ticket->path, "test"); // aca iria la funcion que busca la info de una tabla
-	strcpy(ticket->MD5, "fruta");
+	/* Lo asocio a una descarga */
+	if( (file=GetFileInfo(movie_name)) == NULL )
+		return NULL;
+	strcpy(ticket->path, file.path); 
+	strcpy(ticket->MD5, file.MD5);
 	strcpy(ticket->ticket, ticket_string);
-	fprintf(stderr, "Inserte %s\n",ticket->ticket);
 	/* Inserto el ticket generado para su posterior uso */	
 	HInsert(tickets_generated, ticket);
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
@@ -712,11 +708,31 @@ MakeTicket(char *user,char *movie_name)
 	return ticket_string;
 }
 
+static file_info_t *
+GetFileInfo(char *name)
+{
+	file_info_t file;
+	file_info_t *file_ptr = malloc(sizeof(file_info_t));
+	int pos;	
+	
+	strcpy(file.name, name);
+	if( (pos=Lookup(file_paths, &file)) == -1 ) {
+		fprintf(stderr, "No lo encontre carajo %d\n",pos);
+		return NULL;
+	}
+	fprintf(stderr, "Lo encontre y esta en %d\n",pos);
+	file_ptr=GetHElement(file_paths, pos);
+	
+	fprintf(stderr, "%s %s\n", file_ptr->name,file_ptr->path);
+	
+	return file_ptr;
+}
+
 static ticket_info_t *
-GetFileInfo(char *ticket)
+GetTicketInfo(char *ticket)
 {
 	ticket_info_t file_info;
-	ticket_info_t *file_ptr = malloc(sizeof(file_info_t));
+	ticket_info_t *file_ptr = malloc(sizeof(ticket_info_t));
 	int pos;	
 	
 	strcpy(file_info.ticket, ticket);

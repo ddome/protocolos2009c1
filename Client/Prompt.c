@@ -279,9 +279,11 @@ static int BuyMovie_Command(scannerADT scanner, void * data)
 				if( strcmp(user, "anonimo") != 0 )
 					strcpy(user, "anonimo");
 				break;
-				
+			case BUY_INVALID_MOVIE:
+				printf("La pelicula es inexistente\n");
+				break;		
 			default:
-				printf("Se ha producido al efectuar la compra\n");
+				printf("Se ha producido un error al efectuar la compra\n");
 		}	
 		free(aux1);
     }

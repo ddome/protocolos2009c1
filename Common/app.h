@@ -65,11 +65,12 @@
 #define __DOWNLOAD_START_OK__	19L
 
 /* Codigos de comprar pelicula */
-#define __BUY_MOVIE__		    20L
-#define __BUY_MOVIE_OK__		    21L
+#define __BUY_MOVIE__		 20L
+#define __BUY_MOVIE_OK__	 21L
 #define __BUY_MOVIE_USER_ERROR__ 22L
 #define __BUY_MOVIE_PASS_ERROR__ 23L
-#define __BUY_MOVIE_ERROR__		24L
+#define __BUY_MOVIE_ERROR__	 24L
+#define __BUY_MOVIE_INVALID__	 25L
 
 /* Estructuras del protocolo de aplicacion */
 

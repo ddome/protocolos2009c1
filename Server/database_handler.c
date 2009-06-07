@@ -8,7 +8,7 @@
 
 
 /*******************************************************************************************************/
-/*                           Funciones de manejo de la tabla de hashing                               */
+/*                           Funciones de manejo de la tabla de hashing                                */
 /*******************************************************************************************************/
 
 /* Usuarios conectados */
@@ -59,8 +59,8 @@ TicketHash( void *v, int size )
 	int num = 0;
 	
 	i=0;
-	while (t->ticket[i] != '\0' ) {
-		num += t->ticket[i];
+	while((t->ticket)[i] != '\0' ) {
+		num += (t->ticket)[i];
 		i++;
 	}	
 	return  num % size;
@@ -86,5 +86,67 @@ TicketLoad(FILE *fd)
 }
 
 /* Peliculas disponibles */
+
+int
+FileInfoComp( void * v1, void *v2 )
+{
+	file_info_t *t1,*t2;
+	
+	t1 = v1;
+	t2 = v2;
+	
+	return strcmp(t1->name, t2->name);
+}
+
+int
+FileInfoHash( void *v, int size )
+{
+	int i;
+	file_info_t *t = v;
+	int num = 0;
+	
+	i=0;
+	while (t->name[i] != '\0' ) {
+		num += (t->name)[i];
+		i++;
+	}	
+	return  num % size;
+}
+
+int
+FileInfoSave(FILE *fd,void *data)
+{	
+	file_info_t *f =data;
+	fprintf(fd,"%s;%s\n",f->name,f->path);
+	
+	return 0;
+}
+
+void *
+FileInfoLoad(FILE *fd)
+{	
+	file_info_t *f = malloc(sizeof(file_info_t));
+	int c;
+	char line[50];
+	char *token;
+
+	if( fgets(line,50,fd) == NULL )
+		return NULL;
+
+	token = strtok (line,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->name,token);
+
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->path,token);
+	
+	return (void*)f;
+}
+
+
+
 
 
