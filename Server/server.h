@@ -22,7 +22,7 @@
 
 #define TICKETS_FREE_PATH "tickets_free"
 
-#define FILES_DATA_PATH "files_location"
+#define FILES_DATA_PATH "movies_location"
 
 /*************************************************************************/
 /*		            Manejo del servidor                          */

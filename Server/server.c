@@ -189,7 +189,6 @@ StartServer(void)
 				else {
 					return FATAL_ERROR;
 				}
-					GetDownloadHeaderData
 			}
 		}
 	}	
@@ -474,7 +473,6 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	ack.ret_code = ret;
 	size = GetDownloadHeaderData(ack,&data);
 	sendTCP(socket, &ack, sizeof(download_header_t));
-MakeTicket(user,buy.movie_name)
 	return OK;
 }
 
@@ -690,7 +688,7 @@ MakeTicket(char *user,char *movie_name)
 	ticket_info_t *ticket = malloc(sizeof(ticket_info_t));
 	unsigned int ticket_number;
 	char *ticket_string = malloc(MAX_TICKET_LEN);
-	file_info_t file;
+	file_info_t * file;
 	/* Genero el ticket */
 	ticket_number = tickets_counter++;
 	SaveCounter(tickets_counter,TICKETS_FREE_PATH);	
@@ -698,13 +696,13 @@ MakeTicket(char *user,char *movie_name)
 	/* Lo asocio a una descarga */
 	if( (file=GetFileInfo(movie_name)) == NULL )
 		return NULL;
-	strcpy(ticket->path, file.path); 
-	strcpy(ticket->MD5, file.MD5);
+	strcpy(ticket->path, file->path); 
+	strcpy(ticket->MD5, file->MD5);
 	strcpy(ticket->ticket, ticket_string);
 	/* Inserto el ticket generado para su posterior uso */	
 	HInsert(tickets_generated, ticket);
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
-	
+	free(file);
 	return ticket_string;
 }
 

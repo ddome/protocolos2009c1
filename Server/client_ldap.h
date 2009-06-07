@@ -14,7 +14,7 @@
 #include "../Common/app.h"
 
 /* Direccion por default */
-#define HOST "192.168.3.129"
+#define HOST "172.16.96.129"
 #define PORT 389
 
 /* Usuario root del ldap */
