@@ -476,6 +476,7 @@ SendBuyRequest(void *packet, u_size size)
 	if( (to_send = malloc(header_size+size)) == NULL )
 		return download_info;	
 	memmove(to_send, data, header_size);
+	memmove(to_send+header_size, packet, size);	
 	free(data);
 	/* Me conecto al servidor */
 	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
