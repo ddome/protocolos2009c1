@@ -202,6 +202,9 @@ int sendTCP(int socketFD,void * data,size_t size)
 			default:            ret=GEN_ERROR;
 		}
 	}
+	
+	free(toSend);
+
 	return ret;
 }
 

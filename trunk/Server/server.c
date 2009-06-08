@@ -459,12 +459,13 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	if( ret == __DOWNLOAD_START__ ) {
 		fprintf(stderr, "ACA TAMBIEN\n");
 		fprintf(stderr, "%s\n",req.ticket);
-		if( (file_info=GetFileInfo(req.ticket)) == NULL ) {
+		if( (file_info=GetTicketInfo(req.ticket)) == NULL ) {
 			fprintf(stderr, "PASO ALGO FULERO FULERO\n");	
 			ret = __DOWNLOAD_ERROR__;
 		}
 		else {
 			fprintf(stderr, "ESTA TODO RE PIOLA\n");
+			fprintf(stderr, "%s\n",file_info->path);
 			strcpy(ack.title,file_info->path);
 			ack.size = GetFileSize(file_info->path);
 		}
@@ -633,7 +634,7 @@ SendMovie(char *path,char *ip,char *port)
 		memmove(to_send+header_size, data, bytes_read);
 		num = sendTCP(socket,to_send,header_size+bytes_read);
 			
-		fprintf(stderr,"TCP %d\n", num);
+		fprintf(stderr,"send %d/%d\n", i,total_packets);
 		
 		free(data);
 		free(header_data);
