@@ -16,7 +16,7 @@
 #define MAX_MOVIE_LEN	50
 #define MAX_MOVIE_GEN	50
 #define MAX_MOVIE_PLOT	300
-#define M_SIZE			50
+#define M_SIZE          50
 
 #define MAX_PATH_LEN     50
 
@@ -28,7 +28,7 @@
 
 #define MAX_TICKET_LEN 20
 
-#define _FILE_SIZE_ 10000000L
+#define _FILE_SIZE_ 100000000L
 
 /* Codigos del pedido (opCode) */
 
