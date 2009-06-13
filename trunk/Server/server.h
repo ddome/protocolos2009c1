@@ -18,11 +18,11 @@
 
 #define PLS_PORT "1061"
 
-#define TICKETS_DATA_PATH "tickets_data"
+#define TICKETS_DATA_PATH "DATA/tickets_data"
 
-#define TICKETS_FREE_PATH "tickets_free"
+#define TICKETS_FREE_PATH "DATA/tickets_free"
 
-#define FILES_DATA_PATH "movies_location"
+#define FILES_DATA_PATH "DATA/movies_location"
 
 /*************************************************************************/
 /*		            Manejo del servidor                          */
