@@ -602,7 +602,7 @@ UserDelete(char *user,char *passwd)
 /* Manda el archivo una vez establecida la conexion servidor -> cliente */
 
 static status
-SendMovie(char *path,char *ip,char *port)
+SendMovie(char *r_path,char *ip,char *port)
 {
 	download_t header;
 	void *data;
@@ -614,7 +614,9 @@ SendMovie(char *path,char *ip,char *port)
 	void *to_send;
 	u_size header_size;
 	int num;
-	
+	char *path;
+	/* El path dentro del server */
+	path = Concat("MOVIES/", r_path);	
 	/* Me conecto al cliente */
 	if( (socket=connectTCP(ip,port)) < 0 ){
 		return ERROR;
@@ -641,6 +643,7 @@ SendMovie(char *path,char *ip,char *port)
 		free(to_send);
 	}
 	
+	free(path);
 	close(socket);
 	fclose(fd);
 	fprintf(stderr,"Termine de transmitir\n");
