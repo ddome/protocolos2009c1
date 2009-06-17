@@ -63,6 +63,9 @@ InitClient(void)
 status
 StartClient(void)
 {	
+	
+	
+	
 	Prompt();
 	return OK;
 }

@@ -5,11 +5,15 @@
  */
 
 #include "database_handler.h"
+#include "../Common/fileHandler.h"
 
 
 /*******************************************************************************************************/
 /*                           Funciones de manejo de la tabla de hashing                                */
 /*******************************************************************************************************/
+
+
+#define MAX_LINE 4600
 
 /* Usuarios conectados */
 
@@ -126,7 +130,6 @@ void *
 FileInfoLoad(FILE *fd)
 {	
 	file_info_t *f = malloc(sizeof(file_info_t));
-	int c;
 	char line[50];
 	char *token;
 
@@ -145,6 +148,172 @@ FileInfoLoad(FILE *fd)
 	
 	return (void*)f;
 }
+
+/* Lista de peliculas */
+
+static movie_t * BuildMovie(char * line,char ** pathNameRet);
+
+static char * ReadLine( FILE * inputFile );
+
+
+static char *
+ReadLine( FILE * inputFile )
+{
+    char line[MAX_LINE+ 1];
+    char * resp;
+    int len;
+	
+    if( fgets( line, sizeof(line), inputFile ) ==NULL )
+		return NULL;
+    if( ((len = strlen( line )) == 0) )
+        return NULL;
+    line[len-1] = '\n';
+    line[len] = '\0';
+	
+    resp = malloc( (len + 1) * sizeof(char) );
+    strncpy(resp, line, len + 1);
+	
+    return (resp);
+}
+
+int
+InitDB(dbADT db,char * pathName,hashADT files_info)
+{
+    FILE * file;
+    char * line;
+    char * pathNameMovie;
+    movie_t * movie;
+	file_info_t *file_info=malloc(sizeof(file_info));
+	
+    if( (file=fopen(pathName,"r"))==NULL )
+		return ERROR;
+    
+    while( (line=ReadLine(file))!=NULL )
+    {
+		movie=BuildMovie(line,&pathNameMovie);
+		if(movie==NULL)
+		{
+			free(line);
+			return ERROR;
+		}
+		free(line);		
+		InsertMovie(db,movie,pathNameMovie);
+		/* Guardo una copia del path en una tabla de hash
+		 * para su posterior busqueda ante una descarga */
+		strcpy(file_info->name,movie->name);
+		strcpy(file_info->path, pathNameMovie);
+		strcpy(file_info->path, movie->MD5);	
+		HInsert(files_info, file_info);
+	
+		free(movie);
+		free(pathNameMovie);
+    }
+    fclose(file);
+    return OK;
+}
+
+static movie_t *
+BuildMovie(char * line,char ** pathNameRet)
+{
+    movie_t * resp;
+    char * aux;
+    char pathName[MAX_PATH_LEN];
+    char * md5;
+    
+    if( (resp=malloc(sizeof(movie_t)))==NULL )
+		return NULL;
+    
+    aux=strtok(line,";");
+	
+    if(aux!=NULL)
+		strcpy(pathName,aux);
+    else
+    {
+		free(resp);
+		return NULL;
+    }
+    
+    if( (*pathNameRet=malloc( sizeof(char) * (strlen(pathName)+1) ))==NULL )
+    {
+		free(resp);
+		return NULL;
+    }
+    strcpy(*pathNameRet,pathName);
+    /*Ve si el archivo asociado al pathName existe*/
+	if( FileExists(pathName) ) {
+		free(resp);
+		return NULL;
+	}
+    
+    /*Nombre de la pelicula*/
+    aux=strtok(NULL,";");
+    if(aux!=NULL)
+		strcpy(resp->name,aux);
+    else
+    {
+		free(resp);
+		return NULL;
+    }
+	
+    /*Genero de la pelicula*/
+    aux=strtok(NULL,";");
+    if(aux!=NULL)
+		strcpy(resp->gen,aux);
+    else
+    {
+		free(resp);
+		return NULL;
+    }
+	
+    /*Trama de la pelicula*/
+    aux=strtok(NULL,";");
+    if(aux!=NULL)
+		strcpy(resp->plot,aux);
+    else
+    {
+		free(resp);
+		return NULL;
+    }
+	
+    /*Duracion de la pelicula*/
+    aux=strtok(NULL,";");
+    if(aux!=NULL)
+		resp->duration=(long)atoi(aux);
+    else
+    {
+		free(resp);
+		return NULL;
+    }
+    
+    /*Tamaño de la pelicula*/
+    resp->size = GetFileSize(pathName);
+    
+    /*Costo de la pelicula*/
+    aux=strtok(NULL,";");
+    if(aux!=NULL)
+		resp->value=(long)atoi(aux);
+    else
+    {
+		free(resp);
+		return NULL;
+    }
+	
+    /*md5=getMD5(pathName);
+	 strcpy(resp->MD5,md5);
+	 free(md5);*/
+    strcpy(resp->MD5,"666");
+    
+    aux=strtok(NULL,";");
+    if(aux!=NULL)
+    {
+		free(resp);
+		return NULL;
+    }
+    
+    return resp;
+}
+	
+
 
 
 

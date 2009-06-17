@@ -21,6 +21,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "movieDB.h"
+#include "hashADT.h"
 #include "../Common/app.h"
 
 /* Estructura con la informacion de los tickets asociados a una descarga */
@@ -54,7 +56,7 @@ int TicketSave(FILE *fd,void *data);
 
 void * TicketLoad(FILE *fd);
 
-/* Peliculas disponibles */
+/* Informacion de los archivos del sistema */
 
 void * FileInfoLoad(FILE *fd);
 
@@ -64,5 +66,8 @@ int FileInfoHash( void *v, int size );
 
 int FileInfoComp( void * v1, void *v2 );
 
+/* Manejo de las peliculas disponibles */
+
+int InitDB(dbADT db,char * pathName,hashADT files_info);
 
 #endif

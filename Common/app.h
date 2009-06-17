@@ -18,7 +18,7 @@
 #define MAX_MOVIE_PLOT	300
 #define M_SIZE          50
 
-#define MAX_PATH_LEN     50
+#define MAX_PATH_LEN     4096
 
 #define MAX_HOST_LEN 20
 #define MAX_PORT_LEN 10
