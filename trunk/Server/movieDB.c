@@ -237,7 +237,7 @@ GetMoviePathName(dbADT db,const char * movieName)
 {
     genreNode * genreN;
     movieNode * movieN;
-    char * resp;
+    char * resp; 
     int i=0,j=0;
     if(db==NULL || movieName==NULL)
 	return NULL;
