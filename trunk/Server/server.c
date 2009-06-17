@@ -385,6 +385,9 @@ UserRegister(client_t client,int socket)
 		if( ClientAdd(ld,client) == ERROR )
 			ret = __REG_ERROR__;
 	}
+	
+	printf("Registre el usuario con nivel %d",client.level);
+	
 	/* Mando la respuesta */
 	ack.ret_code = ret;
 	sendTCP(socket, &ack, sizeof(ack_t));
@@ -464,7 +467,7 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 			ret = __DOWNLOAD_ERROR__;
 		}
 		else {
-			fprintf(stderr, "ESTA TODO RE PIOLA\n");
+			fprintf(stderr, "ESTA TODO RE PIOLA, le quedan %d bajads\n",file_info->n_downloads);
 			fprintf(stderr, "%s\n",file_info->path);
 			strcpy(ack.title,file_info->path);
 			ack.size = GetFileSize(file_info->path);
@@ -501,6 +504,17 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 	}
 
 	fprintf(stderr,"%s %s\n",start.ip,start.port);
+	
+	/* descuento la descarga */
+	file_info->n_downloads -= 1;
+	/* Borro el ticket */
+	HDelete(tickets_generated, file_info);
+	if( file_info->n_downloads > 0 ) {
+		HInsert(tickets_generated, file_info);
+	}
+	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
+	
+	printf("Le quedan %d bajadas/n",file_info->n_downloads);
 	
 	switch( fork() ) {
 		case 0:
@@ -602,7 +616,7 @@ UserDelete(char *user,char *passwd)
 /* Manda el archivo una vez establecida la conexion servidor -> cliente */
 
 static status
-SendMovie(char *r_path,char *ip,char *port)
+SendMovie(char *path,char *ip,char *port)
 {
 	download_t header;
 	void *data;
@@ -614,9 +628,7 @@ SendMovie(char *r_path,char *ip,char *port)
 	void *to_send;
 	u_size header_size;
 	int num;
-	char *path;
-	/* El path dentro del server */
-	path = Concat("MOVIES/", r_path);	
+
 	/* Me conecto al cliente */
 	if( (socket=connectTCP(ip,port)) < 0 ){
 		return ERROR;
@@ -626,6 +638,7 @@ SendMovie(char *r_path,char *ip,char *port)
 	int i;
 	header.total_packets = total_packets;
 	fd = fopen(path,"rb");
+
 	for(i=0;i<total_packets;i++) {
 		bytes_read = GetFileData(fd,_FILE_SIZE_,i,&data);
 		header.size = bytes_read;
@@ -643,7 +656,6 @@ SendMovie(char *r_path,char *ip,char *port)
 		free(to_send);
 	}
 	
-	free(path);
 	close(socket);
 	fclose(fd);
 	fprintf(stderr,"Termine de transmitir\n");
@@ -693,6 +705,8 @@ MakeTicket(char *user,char *movie_name)
 	unsigned int ticket_number;
 	char *ticket_string = malloc(MAX_TICKET_LEN);
 	file_info_t * file;
+	
+	
 	/* Genero el ticket */
 	ticket_number = tickets_counter++;
 	SaveCounter(tickets_counter,TICKETS_FREE_PATH);	
@@ -703,6 +717,8 @@ MakeTicket(char *user,char *movie_name)
 	strcpy(ticket->path, file->path); 
 	strcpy(ticket->MD5, file->MD5);
 	strcpy(ticket->ticket, ticket_string);
+	ticket->n_downloads = GetUserLevel(ld, user);
+	printf("Registre el ticket con nivel %d",ticket->n_downloads);
 	/* Inserto el ticket generado para su posterior uso */	
 	HInsert(tickets_generated, ticket);
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);

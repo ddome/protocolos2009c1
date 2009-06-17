@@ -149,7 +149,7 @@ static int NewAccount_Command(scannerADT scanner, void * data)
 		aux5=ReadToken(scanner);
 		aux6=ReadToken(scanner); /* pasar a int */
 		
-		switch( UserRegistration(aux1, aux2, aux3, aux4, aux5, 10) ) {
+		switch( UserRegistration(aux1, aux2, aux3, aux4, aux5, atoi(aux6) ) ) {
 				
 			case REG_PASSWD_ERROR:
 				printf("La clave de seguridad debe coincidir con la primer clave ingresada\n");
