@@ -351,6 +351,7 @@ UserDownload(char * ticket)
 		case __DOWNLOAD_START__:
 			ret = DOWNLOAD_OK;
 			/* Reservo espacio en el disco local para el archivo que voy a bajar */
+			printf("(%s)\n",download_info.title);
 			if( (fd = CreateFile(download_info.title,download_info.size)) == NULL )
 				ret = DOWNLOAD_ERROR;
 			/* Comienzo a descargar */

@@ -13,7 +13,7 @@
 /*******************************************************************************************************/
 
 
-#define MAX_LINE 4600
+#define MAX_LINE 4646
 
 /* Usuarios conectados */
 
@@ -153,8 +153,6 @@ FileInfoLoad(FILE *fd)
 
 static movie_t * BuildMovie(char * line,char ** pathNameRet);
 
-static char * ReadLine( FILE * inputFile );
-
 
 static char *
 ReadLine( FILE * inputFile )
@@ -163,9 +161,9 @@ ReadLine( FILE * inputFile )
     char * resp;
     int len;
 	
-    if( fgets( line, sizeof(line), inputFile ) ==NULL )
+    if( fgets( line, MAX_LINE, inputFile ) ==NULL )
 		return NULL;
-    if( ((len = strlen( line )) == 0) )
+    if( ((len = strlen( line )) == 0) || ((len = strlen( line )) == 1 ) )
         return NULL;
     line[len-1] = '\n';
     line[len] = '\0';
@@ -183,12 +181,12 @@ InitDB(dbADT db,char * pathName,hashADT files_info)
     char * line;
     char * pathNameMovie;
     movie_t * movie;
-	file_info_t *file_info=malloc(sizeof(file_info));
+	
 	
     if( (file=fopen(pathName,"r"))==NULL )
 		return ERROR;
     
-    while( (line=ReadLine(file))!=NULL )
+    while( (line=ReadLine(file))!=NULL /*&& line[0]!='\n'*/)
     {
 		movie=BuildMovie(line,&pathNameMovie);
 		if(movie==NULL)
@@ -200,9 +198,10 @@ InitDB(dbADT db,char * pathName,hashADT files_info)
 		InsertMovie(db,movie,pathNameMovie);
 		/* Guardo una copia del path en una tabla de hash
 		 * para su posterior busqueda ante una descarga */
+		file_info_t * file_info=malloc(sizeof(file_info_t));
 		strcpy(file_info->name,movie->name);
 		strcpy(file_info->path, pathNameMovie);
-		strcpy(file_info->path, movie->MD5);	
+		strcpy(file_info->MD5, movie->MD5);	
 		HInsert(files_info, file_info);
 	
 		free(movie);
@@ -240,10 +239,10 @@ BuildMovie(char * line,char ** pathNameRet)
     }
     strcpy(*pathNameRet,pathName);
     /*Ve si el archivo asociado al pathName existe*/
-	if( FileExists(pathName) ) {
-		free(resp);
-		return NULL;
-	}
+    if( !FileExists(pathName) ) {
+	    free(resp);
+	    return NULL;
+    }
     
     /*Nombre de la pelicula*/
     aux=strtok(NULL,";");

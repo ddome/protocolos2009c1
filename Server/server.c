@@ -145,7 +145,8 @@ InitServer(void)
 	
 	/* Ubicacion de las peliculas dentro del file system */
 	file_paths = NewHash(150, FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
-	
+	if(file_paths==NULL)
+	    return FATAL_ERROR;
 	/* Lista de peliculas */
 	db = NewDB();
 	if(InitDB(db,FILES_DATA_PATH,file_paths)==ERROR) {
@@ -519,6 +520,7 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 		else {
 			fprintf(stderr, "ESTA TODO RE PIOLA, le quedan %d bajads\n",file_info->n_downloads);
 			fprintf(stderr, "%s\n",file_info->path);
+			printf("(%s)\n",file_info->path);
 			strcpy(ack.title,file_info->path);
 			ack.size = GetFileSize(file_info->path);
 		}
@@ -791,7 +793,7 @@ GetFileInfo(char *name)
 	fprintf(stderr, "Lo encontre y esta en %d\n",pos);
 	file_ptr=GetHElement(file_paths, pos);
 	
-	fprintf(stderr, "%s %s\n", file_ptr->name,file_ptr->path);
+	fprintf(stderr, "(%s) (%s)\n", file_ptr->name,file_ptr->path);
 	
 	return file_ptr;
 }

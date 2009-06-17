@@ -233,6 +233,7 @@ GetUserLevel(LDAP *ld,char *user)
 	char *filter = GetClientFilter(user);
 	
 	if (ldap_search_s(ld, CLIENT_PATH, LDAP_SCOPE_SUBTREE,filter, NULL, 0, &res)!= LDAP_SUCCESS) {
+		printf("%s\n",filter);
 		ldap_perror(ld, "ldap_search_s");
 		exit(1);
 	}
