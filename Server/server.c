@@ -88,9 +88,13 @@ static u_size GetDownloadStartOK(void *data, download_start_t * download_start);
 
 static u_size GetRequest(void *data, request_t * request);
 
+static u_size GetGenPack(void *data, list_movie_request_t *gen);
+
 /************************************************************/
 /*                   GetData(pack)                          */
 /************************************************************/
+
+static u_size GetHeaderData( header_t pack, void **data_ptr);
 
 static u_size GetPaymentRequestData(server_request_t req,
                                   void ** req_data);
@@ -104,6 +108,8 @@ static u_size GetDownloadData( download_t pack,
 static u_size GetBuyMoviePack(void *data,buy_movie_request_t *buy);
 
 static u_size GetBuyTicketData( buy_movie_ticket_t pack, void **data_ptr);
+
+static u_size GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr );
 
 
 /************************************************************/
@@ -227,6 +233,7 @@ Session(void *data,int socket)
 	download_start_t start;
 	u_size header_size;
 	buy_movie_request_t buy;
+	list_movie_request_t gen;
 	
 	
 	/* Levanto el header del paquete */	
@@ -251,6 +258,12 @@ Session(void *data,int socket)
 			fprintf(stderr,"Llego un pedido de --new-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserRegister(client,socket);
 			break;
+		case __LIST_MOVIES_BY_GEN__:
+			/* Lista de peliculas por genero */
+			GetGenPack(data+header_size,&gen);
+			fprintf(stderr,"Llego un pedido de --listar-- de user:%s passwd:%s\n",log.user,log.passwd);
+			return ListMoviesByGen(gen,socket);
+			break;				
 		case __BUY_MOVIE__:
 			/* Comprar pelicula */
 			fprintf(stderr,"Llego un pedido de --buymovie-- de user:%s passwd:%s\n",header.user,header.passwd);
@@ -401,6 +414,33 @@ UserRegister(client_t client,int socket)
 	/* Mando la respuesta */
 	ack.ret_code = ret;
 	sendTCP(socket, &ack, sizeof(ack_t));
+	
+	return OK;
+}
+
+/* case __LIST_MOVIE_BY_GEN__ */
+
+status
+ListMoviesByGen(list_movie_request_t gen, int socket)
+{
+	void *data;
+	void *header_data;
+	u_size data_size;
+	u_size header_size;
+	header_t header;
+
+	movie_t **movies = GetMoviesByGenre(db,gen.gen);
+	/* Armo el header con la cantidad de peliculas listadas */
+	header.total_objects = GetMoviesNumber(movies);
+	header_size = GetHeaderData(header, &header_data);
+	data_size = GetMoviesListData(movies, header.total_objects, &data);
+	
+	sendTCP(socket, header_data, header_size);
+	sendTCP(socket, data, data_size);
+		
+	FreeMovieList(movies);
+	free(header_data);
+	free(data);
 	
 	return OK;
 }
@@ -831,6 +871,18 @@ GetLoginPack(void *data, login_t *log)
 }
 
 static u_size
+GetGenPack(void *data, list_movie_request_t *gen)
+{	
+	u_size pos;
+	
+	pos = 0;
+	memmove(gen->gen, data, MAX_MOVIE_GEN);
+	pos+=MAX_MOVIE_GEN;
+	
+	return pos;
+}
+
+static u_size
 GetDownloadStartOK(void *data, download_start_t * download_start)
 {
     u_size pos;
@@ -897,6 +949,65 @@ GetBuyMoviePack(void *data,buy_movie_request_t *buy)
 /*******************************************************************************************************/
 /*                                          GetData(pack)                                              */
 /*******************************************************************************************************/
+
+static u_size
+GetHeaderData( header_t pack, void **data_ptr) 
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = sizeof(unsigned long) * 2 + MAX_USER_LEN + MAX_USER_PASS;
+	
+	if( (data=malloc(size)) == NULL )
+		return -1;
+	
+	pos=0;
+	memmove(data, &(pack.opCode), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, &(pack.total_objects), sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
+	memmove(data+pos, pack.user, MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(data+pos, pack.passwd, MAX_USER_PASS);
+	
+	*data_ptr = data;
+	return size;
+}
+
+static u_size
+GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr )
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = MAX_MOVIE_LEN + MAX_MOVIE_GEN + MAX_MOVIE_PLOT + sizeof(u_size) * 3 + M_SIZE;
+	data = malloc(size * n_movies);
+	
+	pos = 0;
+	while (*movies != NULL) {
+		memmove(data+pos, (*movies)->name, MAX_MOVIE_LEN);
+		pos+=MAX_MOVIE_LEN;
+		memmove(data+pos, (*movies)->gen, MAX_MOVIE_GEN);
+		pos+=MAX_MOVIE_GEN;
+		memmove(data+pos, (*movies)->plot, MAX_MOVIE_PLOT);
+		pos+=MAX_MOVIE_PLOT;
+		memmove(data, &((*movies)->duration), sizeof(unsigned long));
+		pos+=sizeof(unsigned long);
+		memmove(data, &((*movies)->size), sizeof(unsigned long));
+		pos+=sizeof(unsigned long);
+		memmove(data, &((*movies)->value), sizeof(unsigned long));
+		pos+=sizeof(unsigned long);
+		memmove(data+pos, (*movies)->MD5, M_SIZE);
+		pos+=M_SIZE;		
+	}
+	
+	*data_ptr = data;
+	return pos;
+}
+
+
 static u_size
 GetPaymentRequestData(server_request_t req,void ** req_data)
 {
