@@ -23,6 +23,7 @@
 #include "counter.h"
 #include "../Common/des/include/encrypt.h"
 #include "../Common/fileHandler.h"
+#include "movieDB.h"
 #include "database_handler.h"
 
 #define PAY_OK 1
@@ -41,6 +42,9 @@ hashADT tickets_generated;
 
 /* Informacion de los archivos disponibles */
 hashADT file_paths;
+
+/* Lista de peliculas */
+dbADT db;
 
 /* Informacion de los tickets generados */
 COUNTER tickets_counter;
@@ -134,7 +138,13 @@ InitServer(void)
 	tickets_generated = LoadHashTable(TICKETS_DATA_PATH, 150, TicketInfoComp, TicketHash, TicketSave, TicketLoad);
 	
 	/* Ubicacion de las peliculas dentro del file system */
-	file_paths = LoadHashTable(FILES_DATA_PATH, 150, FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
+	file_paths = NewHash(150, FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
+	
+	/* Lista de peliculas */
+	db = NewDB();
+	if(InitDB(db,FILES_DATA_PATH,file_paths)==ERROR) {
+		return FATAL_ERROR;
+	}
 	
 	/* Tickets disponibles */
 	tickets_counter = LoadCounter(TICKETS_FREE_PATH);
