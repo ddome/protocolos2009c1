@@ -251,20 +251,40 @@ GetMoviePathName(dbADT db,const char * movieName)
 	    SetBegin(genreN->movieList);
 	    while( GetData(genreN->movieList,(listElementT*)&movieN) && j<genreN->cantMoviesGenre)
 	    {
-		if( strcmp(movieN->movie.name,movieName)==0 )
-		{
-		    if( (resp=malloc(sizeof(char)*(strlen(movieN->pathName)+1)))==NULL )
-			return NULL;
-		    strcpy(resp,movieN->pathName);
-		    return resp;
-		}
+			if( strcmp(movieN->movie.name,movieName)==0 )
+			{
+				if( (resp=malloc(sizeof(char)*(strlen(movieN->pathName)+1)))==NULL )
+				return NULL;
+				strcpy(resp,movieN->pathName);
+				return resp;
+			}
 		j++;
 	    }
-	    j=0;
+		j=0;
 	}
 	i++;
     }
     return NULL;
+}
+
+unsigned long
+GetMoviesNumber(movie_t **movies)
+{
+	unsigned long num;
+	while (*movies != NULL) {
+		num++;
+		movies++;
+	}
+	return num;
+}
+
+void
+FreeMovieList(movie_t **movies)
+{
+	while (*movies != NULL) {
+		free(*movies);
+		movies++;
+	}
 }
 
 void

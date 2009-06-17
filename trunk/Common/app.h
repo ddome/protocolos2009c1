@@ -65,13 +65,19 @@
 #define __DOWNLOAD_START_OK__	19L
 
 /* Codigos de comprar pelicula */
-#define __BUY_MOVIE__		 20L
-#define __BUY_MOVIE_OK__	 21L
-#define __BUY_MOVIE_USER_ERROR__ 22L
-#define __BUY_MOVIE_PASS_ERROR__ 23L
-#define __BUY_MOVIE_ERROR__	 24L
+#define __BUY_MOVIE__		     20L
+#define __BUY_MOVIE_OK__			 21L
+#define __BUY_MOVIE_USER_ERROR__  22L
+#define __BUY_MOVIE_PASS_ERROR__  23L
+#define __BUY_MOVIE_ERROR__		 24L
 #define __BUY_MOVIE_INVALID__	 25L
 
+/* Codigos para consultar peliculas */
+#define __LIST_MOVIES_BY_GEN__	 25L
+#define __LIST_GENS__			 26L
+#define __LIST_OK__				 27L
+#define __LIST_ERROR__			 28L
+ 
 /* Estructuras del protocolo de aplicacion */
 
 /* Header */
@@ -158,6 +164,11 @@ typedef struct {
 	unsigned long ret_code;
 	char ticket[MAX_TICKET_LEN];
 } buy_movie_ticket_t;
+
+/* Consulta de peliculas */
+typedef struct {
+	char gen[MAX_MOVIE_GEN];
+} list_movie_request_t;
 
 /* Respuesta */
 typedef struct {

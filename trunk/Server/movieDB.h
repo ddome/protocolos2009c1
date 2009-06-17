@@ -25,7 +25,12 @@ int GetGenreNum(dbADT db);
 
 char * GetMoviePathName(dbADT db,const char * movieName);
 
+unsigned long GetMoviesNumber(movie_t **movies);
+
+void FreeMovieList(movie_t **movies);
+
 void FreeDB(dbADT db);
+
 #endif
 
 

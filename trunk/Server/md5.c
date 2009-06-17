@@ -21,21 +21,17 @@ getMD5(const char * pathName)
         return NULL;
     }
     
-    MD5_Init(&md5);
+    //MD5_Init(&md5);
     
     while(!quit)
     {
         size=fread(readF,1,1,file);
-        MD5_Update(&md5,readF,size);
+        //MD5_Update(&md5,readF,size);
         if(feof(file))
             quit=1;
     }
     
-    MD5_Final(resp,&md5);
-    printf("Resp: (%s)\n",resp);
-    for(i=0;i<16;i++){
-        printf("%02x",resp[i]);
-    } 
+    //MD5_Final(resp,&md5);
     printf("\n");
     fclose(file);
     
