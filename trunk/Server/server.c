@@ -494,6 +494,7 @@ status
 UserDownload(request_t req,int socket,char *user,char *passwd)
 {
 	int ret = __DOWNLOAD_START__;
+	char * movieName;
 	download_header_t ack;
 	ticket_info_t *file_info;
 	u_size size;
@@ -520,8 +521,9 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 		else {
 			fprintf(stderr, "ESTA TODO RE PIOLA, le quedan %d bajads\n",file_info->n_downloads);
 			fprintf(stderr, "%s\n",file_info->path);
-			printf("(%s)\n",file_info->path);
-			strcpy(ack.title,file_info->path);
+			movieName=GetNameFromPath(file_info->path);
+			printf("ACAAAAAAAAAAAAAA: (%s)\n",movieName);
+			strcpy(ack.title,movieName);
 			ack.size = GetFileSize(file_info->path);
 		}
 	}
@@ -774,7 +776,6 @@ MakeTicket(char *user,char *movie_name)
 	/* Inserto el ticket generado para su posterior uso */	
 	HInsert(tickets_generated, ticket);
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
-	free(file);
 	return ticket_string;
 }
 
