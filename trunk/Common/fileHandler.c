@@ -55,7 +55,6 @@ FileExists( char *path )
 	FILE * fptr;
 	
 	if( (fptr=fopen(path,"r")) == NULL ) {
-		free(path);
 		return FALSE;
 	}
 	fclose(fptr);
