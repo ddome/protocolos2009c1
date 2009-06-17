@@ -75,4 +75,20 @@ CreateFile(char*path,u_size size)
 	return out;
 }
 
-
+char * 
+GetNameFromPath(char * path)
+{
+    char * ptr,*resp;
+    int len=0;
+    if(path==NULL)
+	return NULL;
+    
+    ptr=strrchr(path,'/');
+    ptr=ptr+1;
+    len=strlen(ptr);
+    
+    if( (resp=malloc(sizeof(char)*(len+1)))==NULL )
+	return NULL;
+    strcpy(resp,ptr);
+    return resp;
+}

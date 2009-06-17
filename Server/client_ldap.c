@@ -289,7 +289,7 @@ GetClientFilter(char *user)
 	aux = malloc(strlen("(")		+
 				 strlen(CLIENT_KEY) +
 				 strlen("=")		+
-				 strlen("user")		+
+				 strlen(user)		+
 				 strlen(")")        + 1);
 	
 	strcpy(aux, "(");

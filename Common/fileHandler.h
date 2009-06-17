@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "defines.h"
 
@@ -27,5 +28,7 @@ unsigned long PutFileData( FILE *fd, unsigned long packet_size, unsigned long in
 boolean FileExists( char *path );
 
 FILE * CreateFile(char*path,u_size size);
+
+char * GetNameFromPath(char * path); 
 
 #endif
