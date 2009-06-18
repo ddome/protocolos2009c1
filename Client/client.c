@@ -17,6 +17,8 @@ char log_passwd[MAX_USER_PASS];
 
 /* Static Functions */
 
+static status NewDownload(int socket);
+
 static unsigned long SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size);
 
 static unsigned long SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr);
@@ -72,7 +74,22 @@ InitClient(void)
 status
 StartClient(void)
 {	
-	Prompt();
+	switch(fork()){
+	
+		case 0:
+			if( InitDownloader() == OK)
+				exit(EXIT_SUCCESS);
+			else
+				exit(EXIT_FAILURE);
+			break;
+		case -1:
+			return FATAL_ERROR;
+			break;
+		default:
+			Prompt();			
+			break;
+	}
+
 	return OK;
 }
 
@@ -89,6 +106,91 @@ UserExit(void)
 		UserLogout();
 }
 
+/* Escucha los pedidos de conexion para iniciar una descarga por parte del servidor */
+status
+InitDownloader(void)
+{
+	int passive_s,ssock;
+	
+	/* Preparo el puerto que va a escuchar los pedidos de conexion de transferencia */
+	if( (passive_s=prepareTCP(HOST_CLIENT,PORT_CLIENT,prepareServer)) < 0 ) {
+		return FATAL_ERROR;
+	}	
+	if( (listenTCP(passive_s,10)) < 0 ) {
+		return FATAL_ERROR;
+	}
+	
+	while(1) {
+		ssock = acceptTCP(passive_s);
+		switch(fork()){
+			case 0: 
+				NewDownload(ssock);
+				exit(EXIT_SUCCESS);
+				break;
+			case -1:
+				return FATAL_ERROR;
+				break;
+			default:
+				/* Sigo escuchando */
+				break;
+		}
+	}	
+	closeTCP(passive_s);
+	
+	return OK;
+	
+}
+
+static status
+NewDownload(int ssock)
+{
+	
+	unsigned long total_packets;
+	unsigned long n_packet;
+	boolean exit;
+	download_t header;
+
+	void *packet;
+
+	u_size header_size;
+	FILE *fd;
+		
+	/* Recibo el primer paquete */
+	n_packet = 0;
+	exit = FALSE;
+	packet = receiveTCP(ssock);
+	header_size = GetDownloadPack(packet,&header);
+	
+	fd = fopen(header.title,"wb+");	
+	/* Lo bajo a disco */
+	PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
+	/* Verifico la cantidad total de paquetes a descargar */
+	total_packets = header.total_packets;
+	free(packet);
+	n_packet++;
+	/* Me fijo si llego a la cantidad total de paquetes bajados */
+	if( n_packet >= total_packets )
+		exit = TRUE;
+	
+	while (!exit) {
+		/* Recibo un paquete */
+		packet = receiveTCP(ssock);
+		header_size = GetDownloadPack(packet,&header);
+		/* Lo bajo a disco */
+		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
+		/* Verifico la cantidad total de paquetes a descargar */
+		total_packets = header.total_packets;
+		free(packet);
+		n_packet++;
+		/* Me fijo si llego a la cantidad total de paquetes bajados */
+		if( n_packet >= total_packets )
+			exit = TRUE;
+	}
+	fclose(fd);
+	closeTCP(ssock);
+	
+	return OK;
+}
 
 client_login_status
 UserLogin(char *user, char* passwd)
@@ -711,24 +813,20 @@ ListenMovie(FILE *fd,char *port,char *ticket)
 static status 
 StartDownload(FILE *fd,char *ticket)
 {	
-	/* Creo un proceso que se encargue de recibir los paquetes de descarga */
-	switch( fork() ) {
-		case 0:			
-			/* Falta incrementar el puerto para atender multiples conexiones */
-			if( (ListenMovie(fd,"1050",ticket)) != OK ) {
-			   exit(EXIT_FAILURE);
-			}
-			fclose(fd);
-			exit(EXIT_SUCCESS);
-			break;
-		case -1:
-			/* fclose(fd); */
-			return ERROR;
-			break;
-		default:
-			return OK;
-			break;
-	}
+	download_start_t start;
+	void *data;
+	u_size size;
+	
+	/* Mando la senial al server pidiendo el inicio de la descarga */
+	strcpy(start.port,PORT_CLIENT);
+	strcpy(start.ip,HOST_CLIENT);
+	strcpy(start.ticket,ticket);
+	
+	size = GetDownloadStartData(start, &data);	
+	if( SendSignal(__DOWNLOAD_START_OK__, data, size) == ERROR )
+		return ERROR;
+	free(data);
+	return OK;
 }
 
 static u_size
@@ -932,9 +1030,11 @@ GetDownloadPack( void *data, download_t *pack)
 	
 	pos = 0;
 	memmove(&(pack->n_packet), data, sizeof(unsigned long) );
-	pos+=sizeof(sizeof(unsigned long));
+	pos+=sizeof(unsigned long);
 	memmove(&(pack->total_packets), data + pos,sizeof(unsigned long) );
 	pos+=sizeof(unsigned long);
+	memmove(pack->title, data + pos,MAX_MOVIE_LEN );
+	pos+=MAX_MOVIE_LEN;
 	memmove(&(pack->size), data + pos , sizeof(u_size));
 	pos+=sizeof(u_size);
 	

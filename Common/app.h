@@ -136,6 +136,7 @@ typedef struct {
 typedef struct {
 	unsigned long n_packet;
 	unsigned long total_packets;
+	char title[MAX_MOVIE_LEN];
 	u_size size;
 } download_t;
 
