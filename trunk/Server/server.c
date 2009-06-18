@@ -695,17 +695,21 @@ SendMovie(char *path,char *ip,char *port)
 	void *to_send;
 	u_size header_size;
 	int num;
+	char *title;
 
 	/* Me conecto al cliente */
 	if( (socket=connectTCP(ip,port)) < 0 ){
 		return ERROR;
 	}
 	total_packets = SplitFile(path,_FILE_SIZE_);
+	title = GetNameFromPath(path);
 	/* Mando los paquetes */
 	int i;
 	header.total_packets = total_packets;
+	strcpy(header.title,title);
 	fd = fopen(path,"rb");
 
+	printf("Voy a mandarle %s\n",header.title);
 	for(i=0;i<total_packets;i++) {
 		bytes_read = GetFileData(fd,_FILE_SIZE_,i,&data);
 		header.size = bytes_read;
@@ -725,6 +729,7 @@ SendMovie(char *path,char *ip,char *port)
 	
 	close(socket);
 	fclose(fd);
+	free(title);
 	fprintf(stderr,"Termine de transmitir\n");
 	return OK;
 }
@@ -1106,7 +1111,7 @@ GetDownloadData( download_t pack, void **data_ptr)
 	u_size size;
 	u_size pos;
 	
-	size = sizeof(unsigned long) * 2 + sizeof(u_size);
+	size = sizeof(unsigned long) * 2 + sizeof(u_size) + MAX_MOVIE_LEN;
 	
 	if( (data=malloc(size)) == NULL )
 		return -1;
@@ -1116,12 +1121,13 @@ GetDownloadData( download_t pack, void **data_ptr)
 	pos+=sizeof(unsigned long);
 	memmove(data+pos, &(pack.total_packets), sizeof(unsigned long));
 	pos+=sizeof(unsigned long);
+	memmove(data+pos, pack.title, MAX_MOVIE_LEN);
+	pos+=MAX_MOVIE_LEN;
 	memmove(data+pos, &(pack.size), sizeof(u_size));
 	pos+=sizeof(u_size);
 	
 	*data_ptr = data;
-	return size;
-	
+	return size;	
 }
 
 

@@ -41,6 +41,8 @@ status InitClient(void);
 status StartClient(void);
 void EndClient(void);
 
+status InitDownloader(void);
+
 client_login_status UserLogin(char *user, char* passwd);
 
 client_change_passwd_status UserChangePasswd(char *new_passwd, char *rep_new_passwd);

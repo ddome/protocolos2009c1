@@ -56,6 +56,8 @@ status UserDownload(request_t req,int socket,char *user,char *passwd);
 
 status UserStartDownload(download_start_t start,int socket, char *user, char *passwd);
 
+status ListMoviesByGen(list_movie_request_t gen, int socket);
+
 /*************************************************************************/
 
 int UsersComp( void *c1, void *c2 );
