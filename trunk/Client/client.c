@@ -19,6 +19,8 @@ char log_passwd[MAX_USER_PASS];
 
 static unsigned long SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size);
 
+static unsigned long SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr);
+
 static download_header_t SendDownloadRequest(void *packet, u_size size);
 
 static buy_movie_ticket_t SendBuyRequest(void *packet, u_size size);
@@ -28,6 +30,9 @@ static status StartDownload(FILE *fd,char *ticket);
 static status ListenMovie(FILE *fd,char *port,char *ticket);
 
 static status ProcessDownload(void *packet);
+
+static movie_t ** GetMovies(void *data, u_size number);
+
 
 /* GetData(packet) */
 
@@ -43,6 +48,8 @@ static u_size GetDownloadStartData( download_start_t pack, void **data_ptr);
 
 static u_size GetBuyData( buy_movie_request_t pack, void **data_ptr);
 
+static u_size GetListMoviesData(list_movie_request_t pack, void **data_ptr);
+
 /* GetPack(data) */
 
 static u_size GetDownloadHeaderPack( void *data, download_header_t *pack );
@@ -50,6 +57,8 @@ static u_size GetDownloadHeaderPack( void *data, download_header_t *pack );
 static u_size GetDownloadPack( void *data, download_t *pack);
 
 static u_size GetBuyTicketPack( void *data, buy_movie_ticket_t *pack);
+
+static u_size GetHeaderPack(void *data, header_t *header);
 
 status 
 InitClient(void)
@@ -63,9 +72,6 @@ InitClient(void)
 status
 StartClient(void)
 {	
-	
-	
-	
 	Prompt();
 	return OK;
 }
@@ -366,8 +372,121 @@ UserDownload(char * ticket)
 	return ret;
 }
 
+client_list_movies_by_gen
+ListMoviesByGen(char *gen, movie_t ***movie_list_ptr)
+{
+	client_user_reg ret = REG_OK;
+	list_movie_request_t list_movies_request;
+
+	void *data;
+	u_size size;
+	u_size n_movies;
+	movie_t **movies_list;
+		
+	/* Armo el pedido */				
+	strcpy(list_movies_request.gen,gen);
+	size = GetListMoviesData(list_movies_request, &data);		
+	/* Mando el pedido */
+	if( (n_movies = SendListMoviesRequest(data, size, &movies_list)) < 0 )
+		ret = LIST_ERROR;
+	else {
+		if( n_movies == 0 ) {
+			ret = LIST_ERROR;
+		}
+		else{
+		*movie_list_ptr = movies_list;
+		ret = LIST_OK;
+		}
+	}
+	free(data);	
+	return ret;
+}
 
 /* Static Functions */
+
+static unsigned long
+SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr)
+{
+	header_t header;
+	header_t ack_header;
+	void *ack_movies;
+	void *to_send;
+	int socket;
+	void *header_data;
+	u_size header_size;
+	
+	/* Tipo de pedido */
+	header.opCode = __LIST_MOVIES_BY_GEN__;
+	header.total_objects = 1;
+	/* Identificacion del usuario */
+	strcpy(header.user,log_user);
+	strcpy(header.passwd,log_passwd);
+	header_size = GetHeaderData(header, &header_data);	
+	/* Concateno los paquetes header y pedido */
+	if( (to_send = malloc(header_size+size)) == NULL )
+		return CONNECT_ERROR;	
+	memmove(to_send, header_data, header_size);
+	free(header_data);
+	/* Chequeo si realmente se manda un paquete asociado al pedido */
+	
+	memmove(to_send+header_size, data, size);
+	
+	/* Me conecto al servidor */
+	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+		free(to_send);
+		return CONNECT_ERROR;
+	}
+	/* Mando el paquete */
+	sendTCP(socket, to_send,header_size+size);
+	free(to_send);
+	
+	/* Espero por la respuesta del servidor */
+	GetHeaderPack(receiveTCP(socket),&ack_header);
+	
+	if( ack_header.opCode == __LIST_OK__ ) {
+		ack_movies = receiveTCP(socket);
+		*out_ptr = GetMovies(ack_movies,ack_header.total_objects);
+		free(ack_movies);
+	}
+	else
+		ack_header.total_objects = 0;
+
+	/* Cierro la conexion????? */
+	close(socket);
+	return ack_header.total_objects;
+}
+
+static movie_t **
+GetMovies(void *data, u_size number)
+{
+	int i;
+	movie_t **list = malloc(sizeof(movie_t*)*(number+1));
+	
+	u_size pos = 0;
+	for(i=0;i<number;i++){
+		
+		list[i] = malloc(sizeof(movie_t));
+		
+		memmove(list[i]->name, data+pos, MAX_MOVIE_LEN);
+		pos+=MAX_MOVIE_LEN;
+		memmove(list[i]->gen, data+pos, MAX_MOVIE_GEN);
+		pos+=MAX_MOVIE_GEN;
+		memmove(list[i]->plot, data+pos, MAX_MOVIE_PLOT);
+		pos+=MAX_MOVIE_PLOT;
+		memmove(&(list[i]->duration), data+pos, sizeof(u_size));
+		pos+=sizeof(u_size);
+		memmove(&(list[i]->size), data+pos, sizeof(u_size));
+		pos+=sizeof(u_size);
+		memmove(&(list[i]->value), data+pos, sizeof(u_size));
+		pos+=sizeof(u_size);
+		memmove(list[i]->MD5, data+pos, M_SIZE);
+		pos+=M_SIZE;		
+	}
+	
+	list[i] = NULL;
+	return list;	
+}
+
 static unsigned long 
 SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 {
@@ -465,7 +584,6 @@ SendBuyRequest(void *packet, u_size size)
 	void *data;
 	u_size header_size;
 	void *ack_data;
-	u_size ack_size;
 	
 	download_info.ret_code = BUY_ERROR;
 	
@@ -668,6 +786,20 @@ GetNewUserData( client_t pack, void **data_ptr)
 }
 
 static u_size
+GetListMoviesData(list_movie_request_t pack, void **data_ptr)
+{
+	void *data;
+	
+	if( (data=malloc(MAX_MOVIE_GEN)) == NULL )
+		return -1;
+	
+	memmove(data, pack.gen, MAX_MOVIE_GEN);
+	
+	*data_ptr = data;
+	return MAX_MOVIE_GEN;	
+	
+}
+static u_size
 GetLoginData( login_t pack, void **data_ptr) 
 {
 	void *data;
@@ -738,6 +870,24 @@ GetBuyData( buy_movie_request_t pack, void **data_ptr)
 	pos += MAX_USER_PASS;
 	
 	*data_ptr = data;
+	return pos;
+}
+
+static u_size
+GetHeaderPack(void *data, header_t *header)
+{	
+	u_size pos;
+	
+	pos=0;
+	memmove(&(header->opCode), data, sizeof(unsigned long int));
+	pos+=sizeof(unsigned long int);
+	memmove(&(header->total_objects), data+pos, sizeof(unsigned long int));
+	pos+=sizeof(unsigned long int);	
+	memmove(header->user, data+pos, MAX_USER_LEN);
+	pos+=MAX_USER_LEN;
+	memmove(header->passwd, data+pos, MAX_USER_PASS);	
+	pos+=MAX_USER_PASS;
+	
 	return pos;
 }
 

@@ -141,12 +141,11 @@ InitServer(void)
 	users_online = NewHash(150, UsersComp, UsersHash,NULL,NULL);	
 	
 	/* Tickets generados asociados a una descarga */
-	tickets_generated = LoadHashTable(TICKETS_DATA_PATH, 150, TicketInfoComp, TicketHash, TicketSave, TicketLoad);
+	tickets_generated = LoadHashTable(TICKETS_DATA_PATH, sizeof(ticket_info_t), TicketInfoComp, TicketHash, TicketSave, TicketLoad);
 	
 	/* Ubicacion de las peliculas dentro del file system */
 	file_paths = NewHash(150, FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
-	if(file_paths==NULL)
-	    return FATAL_ERROR;
+
 	/* Lista de peliculas */
 	db = NewDB();
 	if(InitDB(db,FILES_DATA_PATH,file_paths)==ERROR) {
@@ -262,7 +261,7 @@ Session(void *data,int socket)
 		case __LIST_MOVIES_BY_GEN__:
 			/* Lista de peliculas por genero */
 			GetGenPack(data+header_size,&gen);
-			fprintf(stderr,"Llego un pedido de --listar-- de user:%s passwd:%s\n",log.user,log.passwd);
+			fprintf(stderr,"Llego un pedido de --listar-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return ListMoviesByGen(gen,socket);
 			break;				
 		case __BUY_MOVIE__:
@@ -430,18 +429,32 @@ ListMoviesByGen(list_movie_request_t gen, int socket)
 	u_size header_size;
 	header_t header;
 
-	movie_t **movies = GetMoviesByGenre(db,gen.gen);
-	/* Armo el header con la cantidad de peliculas listadas */
-	header.total_objects = GetMoviesNumber(movies);
+	printf("Voy a listar para el genero %s\n",gen.gen);
+	movie_t **movies;
+	if( (movies=GetMoviesByGenre(db,gen.gen)) == NULL )
+		header.opCode = __LIST_ERROR__;
+	else {
+		header.opCode = __LIST_OK__;
+		if( (header.total_objects=GetMoviesNumber(movies)) <= 0 )
+			header.opCode = __LIST_ERROR__;
+		else
+			data_size = GetMoviesListData(movies, header.total_objects, &data);		
+	}
+
 	header_size = GetHeaderData(header, &header_data);
-	data_size = GetMoviesListData(movies, header.total_objects, &data);
-	
+
+	/* Mando el header */
 	sendTCP(socket, header_data, header_size);
-	sendTCP(socket, data, data_size);
-		
-	FreeMovieList(movies);
+	if( header.opCode == __LIST_OK__ ) {
+		/* Mando la lista de peliculas */
+		sendTCP(socket, data, data_size);
+	}
+	
+	if( header.opCode == __LIST_OK__ ) {
+		FreeMovieList(movies);
+		free(data);
+	}
 	free(header_data);
-	free(data);
 	
 	return OK;
 }
@@ -470,7 +483,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 			if( (aux_ticket=MakeTicket(user,buy.movie_name)) == NULL )
 				ret = __BUY_MOVIE_INVALID__;	
 			else {
-				strcpy(ack.ticket,MakeTicket(user,buy.movie_name));
+				strcpy(ack.ticket,aux_ticket);
 				ret = __BUY_MOVIE_OK__;
 			}
 		}
@@ -519,7 +532,7 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 			ret = __DOWNLOAD_ERROR__;
 		}
 		else {
-			fprintf(stderr, "ESTA TODO RE PIOLA, le quedan %d bajads\n",file_info->n_downloads);
+			fprintf(stderr, "ESTA TODO RE PIOLA, le quedan %d bajadas\n",file_info->n_downloads);
 			fprintf(stderr, "%s\n",file_info->path);
 			movieName=GetNameFromPath(file_info->path);
 			printf("ACAAAAAAAAAAAAAA: (%s)\n",movieName);
@@ -771,11 +784,13 @@ MakeTicket(char *user,char *movie_name)
 	strcpy(ticket->path, file->path); 
 	strcpy(ticket->MD5, file->MD5);
 	strcpy(ticket->ticket, ticket_string);
-	ticket->n_downloads = GetUserLevel(ld, user);
-	printf("Registre el ticket con nivel %d",ticket->n_downloads);
+	ticket->n_downloads = (unsigned char)GetUserLevel(ld, user);
+	fprintf(stderr,"Registre el ticket con nivel %d\n",ticket->n_downloads);
+	fflush(stderr);
 	/* Inserto el ticket generado para su posterior uso */	
 	HInsert(tickets_generated, ticket);
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
+	
 	return ticket_string;
 }
 
@@ -815,7 +830,7 @@ GetTicketInfo(char *ticket)
 	fprintf(stderr, "Lo encontre y esta en %d\n",pos);
 	file_ptr=GetHElement(tickets_generated, pos);
 	
-	fprintf(stderr, "%s %s\n", file_ptr->ticket,file_ptr->path);
+	fprintf(stderr, "%s %s bajadas:%d\n", file_ptr->ticket,file_ptr->path,file_ptr->n_downloads);
 	
 	return file_ptr;
 }
@@ -985,27 +1000,34 @@ GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr )
 	u_size size;
 	u_size pos;
 	
+	
+	printf("number: %ld\n",n_movies);
+	
 	size = MAX_MOVIE_LEN + MAX_MOVIE_GEN + MAX_MOVIE_PLOT + sizeof(u_size) * 3 + M_SIZE;
 	data = malloc(size * n_movies);
 	
 	pos = 0;
-	while (*movies != NULL) {
-		memmove(data+pos, (*movies)->name, MAX_MOVIE_LEN);
+	int i;
+	printf("Empiezooo\n");
+	for(i=0;i<n_movies;i++){
+		memmove(data+pos, movies[i]->name, MAX_MOVIE_LEN);
 		pos+=MAX_MOVIE_LEN;
-		memmove(data+pos, (*movies)->gen, MAX_MOVIE_GEN);
+		memmove(data+pos, movies[i]->gen, MAX_MOVIE_GEN);
 		pos+=MAX_MOVIE_GEN;
-		memmove(data+pos, (*movies)->plot, MAX_MOVIE_PLOT);
+		memmove(data+pos, movies[i]->plot, MAX_MOVIE_PLOT);
 		pos+=MAX_MOVIE_PLOT;
-		memmove(data, &((*movies)->duration), sizeof(unsigned long));
+		memmove(data+pos, &(movies[i]->duration), sizeof(unsigned long));
 		pos+=sizeof(unsigned long);
-		memmove(data, &((*movies)->size), sizeof(unsigned long));
+		memmove(data+pos, &(movies[i]->size), sizeof(unsigned long));
 		pos+=sizeof(unsigned long);
-		memmove(data, &((*movies)->value), sizeof(unsigned long));
+		memmove(data+pos, &(movies[i]->value), sizeof(unsigned long));
 		pos+=sizeof(unsigned long);
-		memmove(data+pos, (*movies)->MD5, M_SIZE);
-		pos+=M_SIZE;		
+		memmove(data+pos, movies[i]->MD5, M_SIZE);
+		pos+=M_SIZE;
+		
+		printf("%d-",i);
 	}
-	
+		
 	*data_ptr = data;
 	return pos;
 }
