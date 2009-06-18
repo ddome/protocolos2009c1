@@ -101,7 +101,6 @@ desencriptar(char * resp, char * encriptado,int size, char * desKey)
 {
     char * buffer;
     int i=0;
-    int cant;
     int sizeEncriptado= size + ((size%CYPHER_SIZE==0)?0: (CYPHER_SIZE - size % CYPHER_SIZE));
 	
     if((buffer=malloc(sizeEncriptado))==NULL)
