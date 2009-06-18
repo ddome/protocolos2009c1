@@ -261,7 +261,8 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 	/*Encripto la informacion a enviar*/
 	encripted=Cypher((char *)newPass_data,size,log_passwd);
 	/* Mando el pedido */
-	ret_code = SendRequest(	__NEW_PASSWD__, 1, encripted, size+(CYPHER_SIZE-size%CYPHER_SIZE));	
+	ret_code = SendRequest(	__NEW_PASSWD__, 1, encripted, size+(CYPHER_SIZE-size%CYPHER_SIZE));
+	free(encripted);
 	/* Proceso la respuesta */
 	switch (ret_code) {
 		case __CHANGE_OK__:
@@ -299,6 +300,7 @@ UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, c
 	u_size buy_size;
 	buy_movie_ticket_t ticket;
 	client_buy_movie_status ret;
+	char * encripted;
 	
 	/* Paquete de pedido */
 	strcpy(buy.movie_name,movie_name);
@@ -306,9 +308,10 @@ UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, c
 	strcpy(buy.pay_user, pay_user);
 	strcpy(buy.pay_passwd, pay_passwd);	
 	buy_size = GetBuyData(buy,&buy_data);
-	
+	/*Encripto la informacion a enviar*/
+	encripted=Cypher((char *)buy_data,buy_size,log_passwd);
 	/* Mando el pedido */
-	ticket = SendBuyRequest( buy_data, buy_size);	
+	ticket = SendBuyRequest( encripted, buy_size+(CYPHER_SIZE-buy_size%CYPHER_SIZE));	
 	/* Proceso la respuesta */
 	switch (ticket.ret_code) {
 		case __BUY_MOVIE_OK__:

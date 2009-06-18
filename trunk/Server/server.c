@@ -250,6 +250,7 @@ Session(void *data,int socket)
 			/* Cambio de clave */
 			decripted=Decypher((char *)(data+header_size),MAX_USER_LEN+MAX_USER_PASS,header.passwd);
 			GetLoginPack(decripted, &log);
+			free(decripted);
 			fprintf(stderr,"Llego un pedido de --password-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserNewPasswd(log,socket,header.user,header.passwd);
 			break;
@@ -268,7 +269,8 @@ Session(void *data,int socket)
 		case __BUY_MOVIE__:
 			/* Comprar pelicula */
 			fprintf(stderr,"Llego un pedido de --buymovie-- de user:%s passwd:%s\n",header.user,header.passwd);
-			GetBuyMoviePack(data+header_size,&buy);
+			decripted=Decypher((char *)(data+header_size),MAX_MOVIE_LEN+MAX_SERVER_LEN+MAX_USER_LEN+MAX_USER_PASS,header.passwd);
+			GetBuyMoviePack(decripted,&buy);
 			return UserBuyMovie(buy,socket,header.user,header.passwd);
 			break;	
 		case __DOWNLOAD__:
@@ -290,7 +292,7 @@ Session(void *data,int socket)
 			return UserLogout(socket, header.user, header.passwd);
 			break;		
 		default:
-			fprintf(stderr, "No se reconocio el op_code:%d\n",header.opCode);
+			fprintf(stderr, "No se reconocio el op_code:%ld\n",header.opCode);
 			return ERROR;
 			break;
 	}
@@ -494,7 +496,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	/* Mando la respuesta */
 	ack.ret_code = ret;
 	ack_size = GetBuyTicketData(ack,&ack_data);
-		
+	
 	sendTCP(socket, ack_data, ack_size);
 	
 	return OK;
@@ -720,7 +722,7 @@ SendMovie(char *path,char *ip,char *port)
 		memmove(to_send+header_size, data, bytes_read);
 		num = sendTCP(socket,to_send,header_size+bytes_read);
 			
-		fprintf(stderr,"send %d/%d\n", i,total_packets);
+		fprintf(stderr,"send %d/%ld\n", i,total_packets);
 		
 		free(data);
 		free(header_data);
