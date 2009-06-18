@@ -10,7 +10,6 @@ Cypher(char * original,int size,char * password)
 {
     char * resp;
     char desKey[CYPHER_SIZE];
-    char * aux = original;
       
     if(setKey(desKey,password)<0)
 	return NULL;
@@ -80,7 +79,7 @@ encriptar(char * resp, char * original,int size, char * desKey)
     cant=size+(CYPHER_SIZE-size%CYPHER_SIZE);
     for(i =0 ; i < size-size%CYPHER_SIZE ; i=i+CYPHER_SIZE)
     {
-	des_encipher(&original[i],&resp[i], desKey);
+	des_encipher((unsigned char *)&original[i],(unsigned char *)&resp[i],(unsigned char *) desKey);
     }
     if(size%CYPHER_SIZE!=0)
     {
@@ -89,7 +88,7 @@ encriptar(char * resp, char * original,int size, char * desKey)
 	{
 	    aux[j]=0;
 	}
-	des_encipher(aux,&resp[i],desKey);
+	des_encipher((unsigned char *)aux,(unsigned char *)&resp[i],(unsigned char *)desKey);
     }
     return 1;
 }
@@ -112,7 +111,7 @@ desencriptar(char * resp, char * encriptado,int size, char * desKey)
     }
     for(i =0 ; i < sizeEncriptado ; i=i+CYPHER_SIZE)
     {
-	des_decipher(&encriptado[i],&buffer[i], desKey);
+	des_decipher((unsigned char *)&encriptado[i],(unsigned char *)&buffer[i],(unsigned char *)desKey);
     }
     memcpy(resp,buffer,size);
     free(buffer);
