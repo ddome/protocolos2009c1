@@ -21,7 +21,7 @@
 #include "../Common/UDPLib.h"
 #include "hashADT.h"
 #include "counter.h"
-#include "../Common/des/include/encrypt.h"
+#include "../Common/cypher.h"
 #include "../Common/fileHandler.h"
 #include "movieDB.h"
 #include "database_handler.h"
@@ -234,7 +234,7 @@ Session(void *data,int socket)
 	u_size header_size;
 	buy_movie_request_t buy;
 	list_movie_request_t gen;
-	
+	char * decripted;
 	
 	/* Levanto el header del paquete */	
 	header_size = GetHeaderPack(data,&header);
@@ -248,7 +248,8 @@ Session(void *data,int socket)
 			break;
 		case __NEW_PASSWD__:
 			/* Cambio de clave */
-			memmove(&log, data+header_size, sizeof(login_t) );
+			decripted=Decypher((char *)(data+header_size),MAX_USER_LEN+MAX_USER_PASS,header.passwd);
+			GetLoginPack(decripted, &log);
 			fprintf(stderr,"Llego un pedido de --password-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return UserNewPasswd(log,socket,header.user,header.passwd);
 			break;
@@ -352,6 +353,7 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	login_t *log_ptr;
 	char *des_passwd;
 	
+	printf("EN UserNewPasswd User:  (%s) - Password (%s)\n",log.user,log.passwd);
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
 		ret = __USER_IS_NOT_LOG__;
@@ -365,9 +367,7 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	if( ret == __CHANGE_OK__ ) {		
 		/* Desencripto la nueva clave */
 		des_passwd = malloc(strlen(log.passwd)+1);
-		des_decipher(log.passwd, des_passwd, passwd);
 		fprintf(stderr, "--%s--\n",des_passwd);
-		strcpy(log.passwd,des_passwd);
 		aux_user = CopyString(log.user);
 		aux_passwd = CopyString(log.passwd);
 		/* Llamado a la funcion que cambia la password en el servidor ldap */

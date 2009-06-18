@@ -9,7 +9,7 @@
 
 #include "client.h"
 #include "Prompt.h"
-#include "../Common/des/include/encrypt.h"
+#include "../Common/cypher.h"
 #include "../Common/fileHandler.h"
 
 char log_user[MAX_USER_LEN];
@@ -243,6 +243,9 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 	login_t new_client_info;
 	int ret_code;
 	char* sec_new_passwd;
+	char * encripted;
+	void * newPass_data;
+	u_size size;
 	
 	/* Chequeo que ingrese la confirmacion de la clave correctamente */
 	if( strcmp(new_passwd, rep_new_passwd) != 0 )
@@ -250,12 +253,15 @@ UserChangePasswd(char *new_passwd, char *rep_new_passwd)
 	/* Encripto la nueva clave */
 	if( (sec_new_passwd=malloc(strlen(new_passwd)+1)) == NULL )
 		return CHANGE_ERROR;
-	des_encipher(new_passwd,sec_new_passwd,log_passwd);
 	/* Paquete de pedido */
-	strcpy(new_client_info.passwd,sec_new_passwd);
+	strcpy(new_client_info.passwd,new_passwd);
 	strcpy(new_client_info.user,log_user);
+	GetLoginData( new_client_info, &newPass_data);
+	size=MAX_USER_LEN+MAX_USER_PASS;
+	/*Encripto la informacion a enviar*/
+	encripted=Cypher((char *)newPass_data,size,log_passwd);
 	/* Mando el pedido */
-	ret_code = SendRequest(	__NEW_PASSWD__, 1, &new_client_info, sizeof(login_t));	
+	ret_code = SendRequest(	__NEW_PASSWD__, 1, encripted, size+(CYPHER_SIZE-size%CYPHER_SIZE));	
 	/* Proceso la respuesta */
 	switch (ret_code) {
 		case __CHANGE_OK__:
