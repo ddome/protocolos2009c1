@@ -14,6 +14,7 @@
 #include "tree.h"
 #include "../Common/defines.h"
 #include "client.h"
+#include "../Common/app.h"
 
 #define MAX_LINE 120
 
@@ -136,6 +137,54 @@ static int ChangePassword_Command(scannerADT scanner, void * data)
 	
     return retValue;    
 }
+
+static int ListMoviesByGen_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+    char * aux1;
+	movie_t **movies_list;
+	int i=0;
+	
+    if(MoreTokensExist(scanner)) {
+		aux1=ReadToken(scanner);
+		
+		switch( ListMoviesByGen(aux1,&movies_list) ) {
+			case LIST_OK:
+				
+
+				printf("------------------------------------------------\n");
+				printf("Lista de peliculas de genero %s\n",aux1);
+				while(movies_list[i] != NULL) {
+					printf("------------------------------------------------\n");
+					printf("%s:\n", movies_list[i]->name);
+					printf("------------------------------------------------\n");
+					printf("%s\n", movies_list[i]->plot);
+					printf("------------------------------------------------\n");
+					printf("Duracion: %ld\n", movies_list[i]->duration);
+					printf("Precio: %ld\n", movies_list[i]->value);
+					printf("bytes: %ld\n", movies_list[i]->size);
+					printf("MD5: %s\n\n", movies_list[i]->MD5);	
+					i++;
+				}
+				
+				
+				break;
+			case LIST_ERROR:
+				printf("Genero inexistente\n");
+				break;
+			default:
+				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		}
+		
+		free(aux1);
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
+
 
 static int NewAccount_Command(scannerADT scanner, void * data)
 {
@@ -302,6 +351,7 @@ static int ShowCommands(scannerADT scanner, void * data)
 	printf("login user password\n");
 	printf("new user password rep_password mail description level\n");
 	printf("password newpassword rep_newpassword\n");
+	printf("listmovies gen\n");
 	printf("download ticket\n");
 	printf("buy movie_name pay_server_name pay_server_user pay_server_password\n");
 	printf("exit\n");
@@ -320,6 +370,7 @@ static void LoadTree(treeADT tree)
 	InsertExpression(tree, "password",  ChangePassword_Command);
 	InsertExpression(tree, "buy",  BuyMovie_Command);
 	InsertExpression(tree, "download",  Download_Command);
+	InsertExpression(tree, "listmovies",  ListMoviesByGen_Command);
 	InsertExpression(tree, "logout",  Logout_Command);
     InsertExpression(tree, "help",   ShowCommands);
 	InsertExpression(tree, "exit",   Exit_Command);

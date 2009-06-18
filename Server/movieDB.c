@@ -148,12 +148,12 @@ GetMoviesByGenre(dbADT db,const char * genre)
     movieNode * movieN;
     int i=0;
     if( genre==NULL || (node=GetGenreNode(db,genre))==0 )
-	return NULL;
+		return NULL;
     
     if( (resp=calloc(1,sizeof(movie_t *)*(node->cantMoviesGenre+1)))==NULL )
-	return NULL;
+		return NULL;
     if( listIsEmpty(node->movieList) )
-	return NULL;
+		return NULL;
     SetBegin(node->movieList);
     
     while( GetData(node->movieList,(listElementT *)&movieN)==1 && i<node->cantMoviesGenre )
@@ -270,10 +270,9 @@ GetMoviePathName(dbADT db,const char * movieName)
 unsigned long
 GetMoviesNumber(movie_t **movies)
 {
-	unsigned long num;
-	while (*movies != NULL) {
-		num++;
-		movies++;
+	unsigned long num=0;
+	while( movies[num] != NULL) {
+		num++;		
 	}
 	return num;
 }
