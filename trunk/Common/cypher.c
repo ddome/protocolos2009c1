@@ -1,132 +1,122 @@
 #include "cypher.h"
 
+int setKey(char desKey[CYPHER_SIZE], char * password);
+int encriptar(char * resp, char * original,int size, char * desKey);
+int desencriptar(char * resp, char * encriptado,int size, char * desKey);
 
 
-/*Funcion que trunca el password en caso de ser mas largo y rellena con 0 el
- *sobrante en caso de que el password tenga una longitud menor a 8. Esto se
- *hace para estar seguros de no levantar basura.
- */
-static char *
-FillPasswd(const char * passwd)
+char*
+Cypher(char * original,int size,char * password)
 {
-    char * ret;
-
-    if( (ret=calloc(1,CYPHER_SIZE))==NULL )
+    char * resp;
+    char desKey[CYPHER_SIZE];
+    char * aux = original;
+      
+    if(setKey(desKey,password)<0)
 	return NULL;
-    
-    /*Solo tomo los primeros 8 caracteres (bytes) del password.*/
-    memmove(ret,passwd,CYPHER_SIZE);
-    
-    return ret;
+
+    if((resp=malloc(size+(CYPHER_SIZE-size%CYPHER_SIZE)))==NULL)
+    {
+	fprintf(stderr,"Error fatal de memoria.\n");
+	exit(1);
+    }
+    encriptar(resp,original,size,desKey);
+    return resp;
+}
+
+char*
+Decypher(char * encriptado,int size,char * password)
+{
+    char * resp;
+    char desKey[CYPHER_SIZE];
+    if(setKey(desKey,password)<0)
+	return NULL;
+    if((resp=malloc(size))==NULL)
+    {
+	fprintf(stderr,"Error fatal de memoria.\n");
+	exit(1);
+    }
+    desencriptar(resp,encriptado,size,desKey);
+    return resp;
 }
 
 
+int
+setKey(char desKey[CYPHER_SIZE], char * password)
+{
+    int longPass=0;
+    int i=0;
+    if(password==NULL)
+	return CYPHER_ERR;
+    longPass=strlen(password);
+    if(longPass < CYPHER_SIZE)
+    {
+	strcpy(desKey,password);
+	for(i=strlen(desKey);i<CYPHER_SIZE;i++)
+	{
+	    desKey[i]=0;
+	}
+    }
+    else if(longPass > CYPHER_SIZE)
+    {
+	memcpy(desKey,password,CYPHER_SIZE);
+    }
+    else
+    {
+	printf("Password de %d digitos y dice %s\n",strlen(password),password);
+	memcpy(desKey,password,CYPHER_SIZE);
+	printf("En deskey dice %s\n",desKey);
+    }
+    return 1;
+}
 
 int
-Cypher(char ** resp,const char * msg,size_t size,const char * passwd)
-{
-    unsigned long i,j;
-    char * newPasswd, * ret;
+encriptar(char * resp, char * original,int size, char * desKey)
+{  
+    int i=0;
+    int j=0;
+    int cant;
     char aux[CYPHER_SIZE];
-    
-    if(resp==NULL || msg==NULL || size <=0 || passwd==NULL )
-	return ERROR_CYPHER;
-    
-    if( (newPasswd=FillPasswd(passwd))==NULL )
-	return ERROR_CYPHER;
-    
-    /*Reservo espacio para guardar los datos encritados. Como la implemetacion
-     *de DES encripta de a 8 bytes debo completar para que el total de espacio
-     *disponible para guardar la respuesta sea multiplo de 8.
-     */
-    if( ( ret=calloc(1,size+(CYPHER_SIZE-size%CYPHER_SIZE)) )==NULL )
+    cant=size+(CYPHER_SIZE-size%CYPHER_SIZE);
+    for(i =0 ; i < size-size%CYPHER_SIZE ; i=i+CYPHER_SIZE)
     {
-	free(newPasswd);
-	return ERROR_CYPHER;
+	des_encipher(&original[i],&resp[i], desKey);
     }
-
-    /*Encripto de a 8 bytes. En caso de de que el tamano de los datos no sea
-     *multiplo de 8 encripto el maximo multiplo de 8 posible.
-     */
-    for(i =0 ; i < size-(size%CYPHER_SIZE) ; i=i+CYPHER_SIZE)
-    {
-	des_encipher((unsigned char *)&msg[i],
-		      (unsigned char *)&ret[i], (unsigned char *)newPasswd);
-    }
-    
-    /*Si el tamano de los datos no era multiplo de 8 encripto el fragmento
-     *restante
-     */
     if(size%CYPHER_SIZE!=0)
     {
-	/*Inicializo aux y copio los datos que faltaron encriptar. Esto se
-	 *hace para estar seguros de no levantar basura al ser lo restante
-	 *menor a 8 bytes.
-	 */
+	memcpy(aux,&original[i],size%CYPHER_SIZE);
 	for(j=size% CYPHER_SIZE;j<CYPHER_SIZE; j++)
 	{
 	    aux[j]=0;
 	}
-	memcpy(aux,&msg[i],size%CYPHER_SIZE);
-	des_encipher((unsigned char *)aux,
-		      (unsigned char *)&ret[i],(unsigned char *)newPasswd);
+	des_encipher(aux,&resp[i],desKey);
     }
-    
-    *resp=ret;
-    free(newPasswd);
-    
-    return OK;
+    return 1;
 }
+
 
 
 
 int
-Decypher(char ** resp,const char * msg,size_t size,const char * passwd)
+desencriptar(char * resp, char * encriptado,int size, char * desKey)
 {
-    unsigned long i,cypheredSize;
-    char * newPasswd, * ret,*aux;
-    
-    if(resp==NULL || msg==NULL || size <=0 || passwd==NULL )
-	return ERROR_CYPHER;
-    
-    if( (newPasswd=FillPasswd(passwd))==NULL )
-	return ERROR_CYPHER;
-
-    /*Reservo espacio para ir guardando los datos a medida que desencriptando
-     *de a 8 bytes. Debo reservar el multiplo de 8 mas proximo a size y mayor
-     *a este. Como la imprimetacion de DES desencripta de a 8 bytes debo
-     *completar para que el total de espacio disponible para guardar la
-     *respuesta sea multiplo de 8.
-     */
-    cypheredSize= size + ((size%CYPHER_SIZE==0)?0: (CYPHER_SIZE - size % CYPHER_SIZE));
-    
-    if( (ret=calloc(1,cypheredSize))==NULL )
+    char * buffer;
+    int i=0;
+    int cant;
+    int sizeEncriptado= size + ((size%CYPHER_SIZE==0)?0: (CYPHER_SIZE - size % CYPHER_SIZE));
+	
+    if((buffer=malloc(sizeEncriptado))==NULL)
     {
-	free(newPasswd);
-	return ERROR_CYPHER;
+	fprintf(stderr,"Error fatal de memoria.\n");
+	exit(1);
     }
-    
-    /*Desencripto los datos.*/
-    for(i =0 ; i < cypheredSize ; i=i+CYPHER_SIZE)
+    for(i =0 ; i < sizeEncriptado ; i=i+CYPHER_SIZE)
     {
-	des_decipher((unsigned char *)&msg[i],(unsigned char *)&ret[i],(unsigned char *)newPasswd);
+	des_decipher(&encriptado[i],&buffer[i], desKey);
     }
-    
-    /*Reservo el espacio justo para la respuesta ya que para realizar el paso
-     *anterior se reservo espacio de mas. Luego copio la respuesta a su nueva
-     *ubicacion.
-     */
-    if( (aux=calloc(1,cypheredSize))==NULL )
-    {
-	free(newPasswd);
-	free(ret);
-	return ERROR_CYPHER;
-    }
-    memmove(aux,ret,size);
-    
-    *resp=aux;
-    free(newPasswd);
-    free(ret);
-    
-    return OK;
+    memcpy(resp,buffer,size);
+    free(buffer);
+    return 1;
 }
+
+
