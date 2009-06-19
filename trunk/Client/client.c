@@ -62,6 +62,18 @@ static u_size GetBuyTicketPack( void *data, buy_movie_ticket_t *pack);
 
 static u_size GetHeaderPack(void *data, header_t *header);
 
+/*PID del proceso que escucha nuecas descargas*/
+pid_t downloader_pid;
+/*Socket destinado a las descaragas*/
+int passive_s;
+
+int
+intHandler(int signum)
+{
+    close(passive_s);
+    exit(EXIT_SUCCESS);
+}
+
 status 
 InitClient(void)
 {
@@ -74,7 +86,7 @@ InitClient(void)
 status
 StartClient(void)
 {	
-	switch(fork()){
+	switch(downloader_pid=fork()){
 	
 		case 0:
 			if( InitDownloader() == OK)
@@ -102,6 +114,7 @@ EndClient(void)
 void 
 UserExit(void)
 {
+	kill(downloader_pid,SIGINT);
 	if( strcmp(log_user, "anonimo") != 0 )
 		UserLogout();
 }
@@ -110,8 +123,8 @@ UserExit(void)
 status
 InitDownloader(void)
 {
-	int passive_s,ssock;
-	
+	int ssock;
+	signal(SIGINT,intHandler);
 	/* Preparo el puerto que va a escuchar los pedidos de conexion de transferencia */
 	if( (passive_s=prepareTCP(HOST_CLIENT,PORT_CLIENT,prepareServer)) < 0 ) {
 		return FATAL_ERROR;
