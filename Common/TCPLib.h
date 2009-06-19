@@ -68,4 +68,6 @@ void * receiveTCP(int socketFD);
 /*Cierra una conexion determinada.*/
 void closeTCP(int socketFD);
 
+void setSocketTimeout(int socket,int seconds);
+
 #endif

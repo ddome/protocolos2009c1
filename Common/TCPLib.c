@@ -239,3 +239,11 @@ void closeTCP(int socketFD)
 	return;
 }
 
+void
+setSocketTimeout(int socket,int seconds)
+{
+    struct timeval tv;
+    tv.tv_sec = seconds;
+    tv.tv_usec = 0;
+    setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv));
+}
