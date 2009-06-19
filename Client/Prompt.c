@@ -382,7 +382,13 @@ static int BuyMovie_Command(scannerADT scanner, void * data)
 				break;
 			case BUY_INVALID_MOVIE:
 				printf("La pelicula es inexistente\n");
-				break;		
+				break;	
+            case BUY_MOVIE_NO_CASH:
+                printf("Fondos insuficientes\n");
+                break;
+            case BUY_MOVIE_USER_ERROR:
+                printf("Cuenta invalida\n");
+                break;
 			default:
 				printf("Se ha producido un error al efectuar la compra\n");
 		}	

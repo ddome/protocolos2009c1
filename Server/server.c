@@ -26,7 +26,12 @@
 #include "movieDB.h"
 #include "database_handler.h"
 
-#define PAY_OK 1
+
+#define PAY_ERROR                 -3
+#define PAY_OK                     0
+#define PAY_INVALID_REQUEST_FORMAT 1
+#define PAY_INVALID_ACCOUNT        2
+#define PAY_INSUFICIENT_CASH       3
 
 /* Variable global que guarda la conexion con el servidor LDAP */
 LDAP *ld;
@@ -527,6 +532,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	void *ack_data;
 	u_size ack_size;
 	char *aux_ticket;
+    int paymentStatus;
 	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
@@ -537,7 +543,8 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 		ret = __USER_ACCESS_DENY__;
 	}
 	if( ret == __BUY_MOVIE_OK__ ) {
-		if( PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd) == PAY_OK ) {
+        
+		if((paymentStatus = PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd)) == PAY_OK ) {
 			if( (aux_ticket=MakeTicket(user,buy.movie_name)) == NULL )
 				ret = __BUY_MOVIE_INVALID__;	
 			else {
@@ -546,7 +553,22 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 			}
 		}
 		else {
-			ret = __BUY_MOVIE_ERROR__;
+            switch(paymentStatus)
+            {
+                case PAY_INVALID_REQUEST_FORMAT:
+                    ret = __BUY_MOVIE_ERROR__;
+                    break;
+                case PAY_INVALID_ACCOUNT:
+                    ret = __BUY_MOVIE_USER_ERROR__;
+                    break;
+                case PAY_INSUFICIENT_CASH:
+                    ret = __BUY_MOVIE_NO_CASH__;
+                    break;
+                default:
+                    ret = __BUY_MOVIE_ERROR__;
+                    break;
+            }
+			
 		}	
 	}
 	/* Mando la respuesta */
@@ -824,8 +846,59 @@ SendPaymentServerLocationRequest( char *name )
 static int
 PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
 {
+    requestPS_t request;
+    replyPS_t reply;
+    char * resp;
+    char * req;
+    int socket;
 	//payment_server_t location = SendPaymentServerLocationRequest(pay_name);
-		
+    
+    strcpy(request.clientServer, pay_name);
+    strcpy(request.accountName, pay_user);
+    strcpy(request.accountNumber, pay_passwd);
+    request.securityCode = 232;
+    request.amount = 100.0;
+    
+    if( (req = MakePSRequest(request)) == NULL)
+    {
+        return PAY_ERROR;
+    }
+    /* Me conecto al payment server */
+    if( (socket=connectTCP("127.0.0.1","7777")) < 0 ){
+        return PAY_ERROR;
+    }
+    
+    sendTCP(socket, (void*)req, strlen(req) + 1);
+    
+    /* Espero por la respuesta del servidor */
+    resp = (char*)receiveTCP(socket);
+    if(resp==NULL)
+    {
+        close(socket);
+        return PAY_ERROR;
+    }
+    /******************************/
+    typedef union{
+        int transaction;
+        char reason[MAXREASON + 1];
+    } reply_t;
+
+    typedef struct{
+        StatusCode statusCode;
+        reply_t reply;
+    } replyPS_t;
+    /********************************/
+    if(!ParsePSReply(resp, &reply))
+    {
+        return PAY_ERROR;
+    }
+    
+    if(reply.statusCode != TRANSACTION_SUCCESS)
+    {
+        return reply.statusCode;
+    }
+    
+    close(socket);
 	return PAY_OK;
 }
 

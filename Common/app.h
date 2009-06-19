@@ -71,17 +71,18 @@
 #define __BUY_MOVIE_PASS_ERROR__  23L
 #define __BUY_MOVIE_ERROR__		 24L
 #define __BUY_MOVIE_INVALID__	 25L
+#define __BUY_MOVIE_NO_CASH__    26L
 
 /* Codigos para consultar peliculas */
-#define __LIST_MOVIES_BY_GEN__	 25L
-#define __LIST_GENS__			 26L
-#define __LIST_OK__				 27L
-#define __LIST_ERROR__			 28L
+#define __LIST_MOVIES_BY_GEN__	 27L
+#define __LIST_GENS__			 28L
+#define __LIST_OK__				 29L
+#define __LIST_ERROR__			 30L
 
 /* Codigos para consultar usuarios */
-#define __LIST_USERS__			 29L
-#define __LIST_USERS_OK__	     30L
-#define __LIST_USERS_ERROR__		 31L
+#define __LIST_USERS__			 31L
+#define __LIST_USERS_OK__	     32L
+#define __LIST_USERS_ERROR__     33L
  
 /* Estructuras del protocolo de aplicacion */
 
