@@ -24,8 +24,9 @@
 
 /* Defines
 */
-#define MAX_CLIENT_SERVER 19
-#define MAXNAME 50
+#define MAX_CLIENT_SERVER 20
+#define MAXNAME 63
+#define MAXACCOUNTNUM 63
 #define MAXREASON 255
 #define MAXREQUEST (MAX_CLIENT_SERVER + MAXNAME+100)
 #define MAXREPLY   (MAXREASON + 100)
@@ -59,7 +60,7 @@
 */
 typedef struct{
     char accountName[MAXNAME + 1];
-    int accountNumber;
+    char accountNumber[MAXACCOUNTNUM + 1];
     int securityCode;
     float amount;
 } psClient_t;
@@ -81,7 +82,7 @@ typedef enum {OPERACION_EXITOSA,
 typedef struct{
     char clientServer[MAX_CLIENT_SERVER + 1];
     char accountName[MAXNAME + 1];
-    int accountNumber;
+    char accountNumber[MAXACCOUNTNUM + 1];
     int securityCode;
     float amount;
 } requestPS_t;
