@@ -777,7 +777,8 @@ SendMovie(char *path,char *ip,char *port)
 		memmove(to_send,header_data, header_size);
 		memmove(to_send+header_size, data, bytes_read);
 		num = sendTCP(socket,to_send,header_size+bytes_read);
-			
+		//if(i==3)
+		  //  sleep(20);	
 		fprintf(stderr,"send %d/%ld\n", i,total_packets);
 		
 		free(data);

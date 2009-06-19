@@ -16,6 +16,7 @@
 #include "../Common/app.h"
 #include <signal.h>
 #include <sys/types.h>
+#include <stdlib.h>
 
 #define CONNECT_ERROR -10
 
@@ -23,7 +24,11 @@
 #define HOST_SERVER  "127.0.0.1"
 
 #define PORT_CLIENT "1051"
-#define PORT_SERVER "1047"
+#define PORT_SERVER "1048"
+
+#define TIMEOUT_DEFAULT 10
+
+#define TIMEOUT_ERROR -20
 
 typedef enum client_login_status { LOGIN_USER_IS_LOG=-4,LOGIN_CONNECT_ERROR=-3,LOGIN_USER_INVALID =-2, LOGIN_PASS_INVALID=-1, USER_LOGIN_OK=1 } client_login_status;
 

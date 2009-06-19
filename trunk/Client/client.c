@@ -24,7 +24,7 @@ static status NewDownload(int socket);
 
 static unsigned long SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size);
 
-static unsigned long SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr);
+static int SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr);
 
 static download_header_t SendDownloadRequest(void *packet, u_size size);
 
@@ -70,20 +70,52 @@ static u_size GetHeaderPack(void *data, header_t *header);
 static client_t ** GetUsersList(void *data, u_size number);
 
 /*PID del proceso que escucha nuecas descargas*/
-pid_t downloader_pid;
+static pid_t downloader_pid;
 /*Socket destinado a las descaragas*/
-int passive_s;
+static int passive_s;
+/*PID del proceso principal.*/
+static pid_t mainProcess_pid;
 
-int
+static int exitPipe=0;
+
+void
 intHandler(int signum)
 {
-    close(passive_s);
-    exit(EXIT_SUCCESS);
+    printf("Saliendo...intHandler\n");
+    fflush(0);
+    kill(getppid(),SIGCHLD);
+    exit(EXIT_FAILURE);
+}
+
+void
+sigpipeHandler(int signum)
+{
+    if(getpid()==mainProcess_pid)
+    {
+	printf("Saliendo en sigpipeHandler procepso principal\n");
+	exitPipe=1;
+	return;
+    }
+    printf("Saliendo...sigpipeHandler\n");
+    fflush(0);
+    exit(0);
+}
+
+void
+childHandler(int signum)
+{
+    printf("Termino un hijo\n");
+    fflush(0);
+    int i;
+    wait(&i);
 }
 
 status 
 InitClient(char *host,char *port)
 {
+	signal(SIGINT,intHandler);
+	signal(SIGPIPE,sigpipeHandler);
+	signal(SIGCHLD,childHandler);
 	/* Cliente por default, sin privilegios */
 	strcpy(log_user, "anonimo");
 	strcpy(log_passwd, "anonimo");
@@ -101,13 +133,14 @@ InitClient(char *host,char *port)
 	else
 		strcpy(client_port, client_port);
 	
-	
+	mainProcess_pid=getpid();
 	return OK;
 }
 
 status
 StartClient(void)
 {	
+	
 	switch(downloader_pid=fork()){
 	
 		case 0:
@@ -146,7 +179,7 @@ status
 InitDownloader(void)
 {
 	int ssock;
-	signal(SIGINT,intHandler);
+
 	/* Preparo el puerto que va a escuchar los pedidos de conexion de transferencia */
 	if( (passive_s=prepareTCP(client_host,client_port,prepareServer)) < 0 ) {
 		return FATAL_ERROR;
@@ -157,6 +190,7 @@ InitDownloader(void)
 	
 	while(1) {
 		ssock = acceptTCP(passive_s);
+		setSocketTimeout(ssock,TIMEOUT_DEFAULT);
 		switch(fork()){
 			case 0: 
 				NewDownload(ssock);
@@ -169,6 +203,7 @@ InitDownloader(void)
 				/* Sigo escuchando */
 				break;
 		}
+		close(ssock);
 	}	
 	closeTCP(passive_s);
 	
@@ -193,7 +228,15 @@ NewDownload(int ssock)
 	/* Recibo el primer paquete */
 	n_packet = 0;
 	exit = FALSE;
+
+	
 	packet = receiveTCP(ssock);
+	if(packet==NULL)
+	{
+	    printf("TIMEOUT 1\n");
+	    fflush(0);
+	    raise(SIGINT);
+	}
 	header_size = GetDownloadPack(packet,&header);
 	
 	fd = fopen(header.title,"wb+");	
@@ -209,7 +252,15 @@ NewDownload(int ssock)
 	
 	while (!exit) {
 		/* Recibo un paquete */
+		printf("ACA");
+		fflush(0);
 		packet = receiveTCP(ssock);
+		if(packet==NULL)
+		{
+		    printf("TIMEOUT 2\n");
+		    fflush(0);
+		    raise(SIGINT);
+		}
 		header_size = GetDownloadPack(packet,&header);
 		/* Lo bajo a disco */
 		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
@@ -346,7 +397,7 @@ UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, c
 	/*Encripto la informacion a enviar*/
 	encripted=Cypher((char *)buy_data,buy_size,log_passwd);
 	/* Mando el pedido */
-	ticket = SendBuyRequest( encripted, buy_size+(CYPHER_SIZE-buy_size%CYPHER_SIZE));	
+	ticket = SendBuyRequest( encripted, buy_size+(CYPHER_SIZE-buy_size%CYPHER_SIZE));
 	/* Proceso la respuesta */
 	switch (ticket.ret_code) {
 		case __BUY_MOVIE_OK__:
@@ -526,7 +577,7 @@ ListMoviesByGen(char *gen, movie_t ***movie_list_ptr)
 
 	void *data;
 	u_size size;
-	u_size n_movies;
+	int n_movies;
 	movie_t **movies_list;
 		
 	/* Armo el pedido */				
@@ -534,6 +585,9 @@ ListMoviesByGen(char *gen, movie_t ***movie_list_ptr)
 	size = GetListMoviesData(list_movies_request, &data);		
 	/* Mando el pedido */
 	if( (n_movies = SendListMoviesRequest(data, size, &movies_list)) < 0 )
+	    if(n_movies==TIMEOUT_ERROR)
+		ret = TIMEOUT_ERROR;
+	    else
 		ret = LIST_ERROR;
 	else {
 		if( n_movies == 0 ) {
@@ -630,13 +684,14 @@ SendListUsersRequest(client_t ***out_ptr)
 	
 }
 
-static unsigned long
+static int
 SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr)
 {
 	header_t header;
 	header_t ack_header;
 	void *ack_movies;
 	void *to_send;
+	void * ackHeader;
 	int socket;
 	void *header_data;
 	u_size header_size;
@@ -660,17 +715,35 @@ SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr)
 	/* Me conecto al servidor */
 	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
 		free(to_send);
-		return CONNECT_ERROR;
+		return -1;
 	}
+	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    close(socket);
+	    return TIMEOUT_ERROR;
+	}
 	
 	/* Espero por la respuesta del servidor */
-	GetHeaderPack(receiveTCP(socket),&ack_header);
+	ackHeader=receiveTCP(socket);
+	if(ackHeader==NULL)
+	{
+	    close(socket);
+	    return TIMEOUT_ERROR;
+	}
+	GetHeaderPack(ackHeader,&ack_header);
 	
 	if( ack_header.opCode == __LIST_OK__ ) {
 		ack_movies = receiveTCP(socket);
+		if(ack_movies==NULL)
+		{
+		    close(socket);
+		    return TIMEOUT_ERROR;
+		}
 		*out_ptr = GetMovies(ack_movies,ack_header.total_objects);
 		free(ack_movies);
 	}
@@ -771,11 +844,24 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 		free(to_send);
 		return CONNECT_ERROR;
 	}
+	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    close(socket);
+	    return TIMEOUT_ERROR;
+	}
+	
 	/* Espero por la respuesta del servidor */
-	ack_ptr = receiveTCP(socket);	
+	ack_ptr = receiveTCP(socket);
+	if(ack_ptr==NULL)
+	{
+	    close(socket);
+	    return TIMEOUT_ERROR;
+	}
 	ret = ack_ptr->ret_code;
 	free(ack_ptr);
 	/* Cierro la conexion????? */
@@ -814,11 +900,24 @@ SendDownloadRequest(void *packet, u_size size)
 		free(to_send);
 		return download_info;
 	}
+	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    close(socket);
+	    return download_info;
+	}
+	
 	/* Espero por la respuesta del servidor */
-	ack_data = receiveTCP(socket);	
+	ack_data = receiveTCP(socket);
+	if(ack_data==NULL)
+	{
+	    close(socket);
+	    return download_info;
+	}
 	GetDownloadHeaderPack(ack_data, &download_info);
 	/* Cierro la conexion????? */
 	close(socket);
@@ -857,11 +956,24 @@ SendBuyRequest(void *packet, u_size size)
 		free(to_send);
 		return download_info;
 	}
+	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    close(socket);
+	    return download_info;
+	}
+	
 	/* Espero por la respuesta del servidor */
-	ack_data = receiveTCP(socket);	
+	ack_data = receiveTCP(socket);
+	if(ack_data==NULL)
+	{
+	    close(socket);
+	    return download_info;
+	}
 	GetBuyTicketPack(ack_data, &download_info);
 	/* Cierro la conexion????? */
 	close(socket);
@@ -895,14 +1007,21 @@ SendSignal(u_size op_code, void *packet, u_size size)
 		free(to_send);
 		return ERROR;
 	}
+	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, to_send,header_size+size);
 	free(to_send);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    close(socket);
+	    return ERROR;
+	}
 	
 	close(socket);
 	return OK;	
 }
-
+/*DEPRECATD*/
 static status
 ListenMovie(FILE *fd,char *port,char *ticket)
 {
