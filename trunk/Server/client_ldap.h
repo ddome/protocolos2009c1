@@ -44,6 +44,8 @@ boolean PasswdIsValid(LDAP *ld, char *user, char *passwd);
 
 unsigned int GetUserLevel(LDAP *ld,char *user);
 
+client_t *GetUsersList(LDAP *ld);
+
 void EndLdap(LDAP *ld);
 
 #endif
