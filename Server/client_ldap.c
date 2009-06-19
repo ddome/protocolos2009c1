@@ -268,7 +268,8 @@ GetUsersList(LDAP *ld)
 		ldap_perror(ld, "ldap_search_s");
 		exit(1);
 	}
-		
+	
+	ret = malloc(sizeof(client_t)*30);//cambiar esto
 	int pos=0;
 	for (e = ldap_first_entry(ld, res); e != NULL; e = ldap_next_entry(ld, e)) {
 		
@@ -305,6 +306,7 @@ GetUsersList(LDAP *ld)
 		
 		ret[pos++] = aux;
 	}
+	ret[pos] = NULL;
 	
 	ldap_msgfree(res);
 	

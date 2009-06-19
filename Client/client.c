@@ -15,6 +15,9 @@
 char log_user[MAX_USER_LEN];
 char log_passwd[MAX_USER_PASS];
 
+char client_host[MAX_HOST_LEN];
+char client_port[MAX_PORT_LEN];
+
 /* Static Functions */
 
 static status NewDownload(int socket);
@@ -75,11 +78,26 @@ intHandler(int signum)
 }
 
 status 
-InitClient(void)
+InitClient(char *host,char *port)
 {
 	/* Cliente por default, sin privilegios */
 	strcpy(log_user, "anonimo");
 	strcpy(log_passwd, "anonimo");
+	
+	if( host != NULL ) {
+		strcpy(client_host, host);
+		printf("%s %s\n",host,port);
+	}
+	else
+		strcpy(client_host, client_host);
+	
+	if( port != NULL ) {
+		strcpy(client_port, port);
+	}
+	else
+		strcpy(client_port, client_port);
+	
+	
 	return OK;
 }
 
@@ -126,7 +144,7 @@ InitDownloader(void)
 	int ssock;
 	signal(SIGINT,intHandler);
 	/* Preparo el puerto que va a escuchar los pedidos de conexion de transferencia */
-	if( (passive_s=prepareTCP(HOST_CLIENT,PORT_CLIENT,prepareServer)) < 0 ) {
+	if( (passive_s=prepareTCP(client_host,client_port,prepareServer)) < 0 ) {
 		return FATAL_ERROR;
 	}	
 	if( (listenTCP(passive_s,10)) < 0 ) {
@@ -790,7 +808,7 @@ ListenMovie(FILE *fd,char *port,char *ticket)
 	u_size header_size;
 	
 	/* Preparo el puerto que va a escuchar la conexion */
-	if( (passive_s=prepareTCP(HOST_CLIENT,port,prepareServer)) < 0 ) {
+	if( (passive_s=prepareTCP(client_host,port,prepareServer)) < 0 ) {
 		return FATAL_ERROR;
 	}	
 	if( (listenTCP(passive_s,10)) < 0 ) {
@@ -799,7 +817,7 @@ ListenMovie(FILE *fd,char *port,char *ticket)
 	
 	/* Mando la senial al server pidiendo el inicio de la descarga */
 	strcpy(start.port,port);
-	strcpy(start.ip,HOST_CLIENT);
+	strcpy(start.ip,client_host);
 	strcpy(start.ticket,ticket);
 	
 	size = GetDownloadStartData(start, &data);	
@@ -840,8 +858,8 @@ StartDownload(FILE *fd,char *ticket)
 	u_size size;
 	
 	/* Mando la senial al server pidiendo el inicio de la descarga */
-	strcpy(start.port,PORT_CLIENT);
-	strcpy(start.ip,HOST_CLIENT);
+	strcpy(start.port,client_port);
+	strcpy(start.ip,client_host);
 	strcpy(start.ticket,ticket);
 	
 	size = GetDownloadStartData(start, &data);	
