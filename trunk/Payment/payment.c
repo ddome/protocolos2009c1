@@ -78,7 +78,7 @@ MandarPaquetes1(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "Charlie Brown");
-strcpy(r.accountNumber,"5557");
+strcpy(r.accountNumber,"5551231231231237");
 r.securityCode = 234;
 r.amount= 100.0;
 Session((void *)MakePSRequest(r),0);
@@ -92,7 +92,7 @@ MandarPaquetes4(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "Charlie Brown");
-strcpy(r.accountNumber,"5557");
+strcpy(r.accountNumber,"5551231231231237");
 r.securityCode = 234;
 r.amount= 80.0;
 Session((void *)MakePSRequest(r),0);
@@ -106,7 +106,7 @@ MandarPaquetes2(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "Charlie Brown");
-strcpy(r.accountNumber,"5557");
+strcpy(r.accountNumber,"5551231231231237");
 r.securityCode = 234;
 r.amount= 600.0;
 Session((void *)MakePSRequest(r),0);
@@ -120,7 +120,7 @@ MandarPaquetes3(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "sdfa");
-strcpy(r.accountNumber,"5557");
+strcpy(r.accountNumber,"5551231231231237");
 r.securityCode = 234;
 r.amount= 600.0;
 Session((void *)MakePSRequest(r),0);
