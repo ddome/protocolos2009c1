@@ -170,9 +170,7 @@ ParsePSRequest(char * req, requestPS_t * resp)
     if(status == 0){
         return 0;
     }
-    auxInt = atoi(aux + strlen(REQ_LINE4));
-
-    resp->accountNumber = auxInt;
+    strcpy(resp->accountNumber, aux + strlen(REQ_LINE4));
     free(aux);
 
     /* Linea 5 */
@@ -236,9 +234,8 @@ MakePSRequest(requestPS_t req)
     strcpy(resp + size, REQ_LINE4);
     size += strlen(REQ_LINE4);
     //Validar q sea numero lindo
-    sprintf(aux, "%d", req.accountNumber);
-    strncpy(resp+size, aux, strlen(aux));
-    size+= strlen(aux);
+    strncpy(resp+size, req.accountNumber, strlen(req.accountNumber));
+    size+= strlen(req.accountNumber);
 
     strncpy(resp + size, "\n", 1);
     size++;
@@ -302,7 +299,18 @@ ValidateRequest(char * field, int lineNumber)
             len = strlen(field);
             return (len > 0 && len <=MAXNAME);
             break;
-        case 4:case 5:
+        case 4:
+            len = strlen(field);
+            for(i = 0; i < len; i++)
+            {
+                if(field[i] > '9' || field[i] < '0')
+                {
+                    return 0;
+                }
+            }
+            return 1;
+            break;
+        case 5:
             auxInt = atoi(field);
             return (auxInt > 0 && errno != ERANGE) ? 1 : 0;
             break;

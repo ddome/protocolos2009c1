@@ -24,6 +24,8 @@ static char * GetInvalidClientStr(void);
 static char * GetInsuficientCashStr(void);
 static char * GetTransactionStr(void);
 static int GetNextTransactionId(void);
+static void InitMessage(void);
+static void ExitMessage(void);
 
 /* Functions
 */
@@ -50,15 +52,15 @@ InitPaymentServer(void)
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",ret);
 		return FATAL_ERROR;
 	}
-	printf("Inicializando...OK\n");
-        /* Inicializar Base de Datos
-        */
-        psDatabase =  LoadHashTable(PAYMENT_DB, 150, psComp, psHash, psSave, psLoad);
-        if(psDatabase == NULL)
-        {
-            return FATAL_ERROR;
-        }
-	
+    
+    /* Inicializar Base de Datos
+    */
+    psDatabase =  LoadHashTable(PAYMENT_DB, 150, psComp, psHash, psSave, psLoad);
+    if(psDatabase == NULL)
+    {
+        return FATAL_ERROR;
+    }
+        
 	transaction_id = 0;
 	return OK;
 }
@@ -76,7 +78,7 @@ MandarPaquetes1(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "Charlie Brown");
-r.accountNumber = 5557;
+strcpy(r.accountNumber,"5557");
 r.securityCode = 234;
 r.amount= 100.0;
 Session((void *)MakePSRequest(r),0);
@@ -90,7 +92,7 @@ MandarPaquetes4(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "Charlie Brown");
-r.accountNumber = 5557;
+strcpy(r.accountNumber,"5557");
 r.securityCode = 234;
 r.amount= 80.0;
 Session((void *)MakePSRequest(r),0);
@@ -104,7 +106,7 @@ MandarPaquetes2(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "Charlie Brown");
-r.accountNumber = 5557;
+strcpy(r.accountNumber,"5557");
 r.securityCode = 234;
 r.amount= 600.0;
 Session((void *)MakePSRequest(r),0);
@@ -118,7 +120,7 @@ MandarPaquetes3(void)
 requestPS_t r;
 strcpy(r.clientServer, "servidor");
 strcpy(r.accountName, "sdfa");
-r.accountNumber = 5557;
+strcpy(r.accountNumber,"5557");
 r.securityCode = 234;
 r.amount= 600.0;
 Session((void *)MakePSRequest(r),0);
@@ -138,12 +140,12 @@ StartPaymentServer(void)
 	nfds = getdtablesize();
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
-	printf("Corriendo...OK\n");
-	//MandarPaquetes1();
-	//MandarPaquetes2();
-	//MandarPaquetes3();
-	//MandarPaquetes4();
-	while(1) {
+    InitMessage();
+	MandarPaquetes1();
+	MandarPaquetes2();
+	MandarPaquetes3();
+	MandarPaquetes4();
+	/*while(1) {
 		
 		memcpy(&rfds, &afds, sizeof(rfds));
 		
@@ -153,7 +155,7 @@ StartPaymentServer(void)
 		}
 		
 		/* Si es una nueva conexion la agrego */
-		if (FD_ISSET(passive_s, &rfds)) {
+	/*	if (FD_ISSET(passive_s, &rfds)) {
 						
 			if( (ssock=acceptTCP(passive_s)) <= 0 ) {
 				printf("Fallo acceptTCP() - retCode=(%d)\n",ssock);
@@ -164,12 +166,12 @@ StartPaymentServer(void)
 		}
 		
 		/* Atiendo cada pedido */
-		for(fd=0; fd<nfds; ++fd) {
+		/*for(fd=0; fd<nfds; ++fd) {
 			if (fd != passive_s && FD_ISSET(fd, &rfds)) {
 								
 				data=receiveTCP(fd);
 				/* Proceso el paquete */
-				if( Session(data,fd) != FATAL_ERROR ) {
+		/*		if( Session(data,fd) != FATAL_ERROR ) {
 					close(fd); // Tengo que cerrar la conexion?
 					FD_CLR(fd, &afds);
 					free(data);
@@ -179,7 +181,7 @@ StartPaymentServer(void)
 				}
 			}
 		}
-	}	
+	}	*/
 	closeTCP(passive_s);
 	
 	return OK;
@@ -194,7 +196,8 @@ StartPaymentServer(void)
 void
 EndPaymentServer(void)
 {
-
+    FreeHash(psDatabase);
+    ExitMessage();
 }
 
 /*******************************************************************************/
@@ -283,6 +286,7 @@ Session(void *data,int socket)
 	HInsert(psDatabase, clientPtr);
 	SaveHashTable(psDatabase, PAYMENT_DB);
 	sendTCP(socket, (void*)reply, strlen(reply) + 1);
+    free(data);
 	return OK;
 }
 
@@ -330,3 +334,35 @@ GetNextTransactionId(void)
 	return ret;
 }
 
+static void 
+InitMessage(void)
+{
+    int i;
+    printf("\nInicializando TCP");
+    for(i = 0; i < 10; i++)
+    {
+        usleep(100000);
+        printf(".");
+    }
+    printf("OK\n");
+    printf("Inicializando base de datos");
+    for(i = 0; i < 10; i++)
+    {
+        usleep(100000);
+        printf(".");
+    }
+    printf("OK\n");
+}
+
+static void
+ExitMessage(void)
+{
+    int i;
+    printf("\nLiberando recursos");
+    for(i = 0; i < 10; i++)
+    {
+        usleep(100000);
+        printf(".");
+    }
+    printf("OK\n");
+}

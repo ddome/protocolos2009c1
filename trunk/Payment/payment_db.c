@@ -32,7 +32,7 @@ int
 psSave(FILE *fd,void *data)
 {	
 	psClient_t *c =data;
-	fprintf(fd,"%s;%d;%d;%0.2f\n",c->accountName,
+	fprintf(fd,"%s;%s;%d;%0.2f\n",c->accountName,
             c->accountNumber,c->securityCode, c->amount);
 	
 	return 0;
@@ -56,7 +56,7 @@ psLoad(FILE *fd)
 	token = strtok (NULL,";");
 	if( token == NULL )
 		return NULL;
-	c->accountNumber = atoi(token);
+	strcpy(c->accountNumber,token);
 
 	token = strtok (NULL,";");
 	if( token == NULL )
