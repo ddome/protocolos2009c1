@@ -111,6 +111,8 @@ static u_size GetBuyTicketData( buy_movie_ticket_t pack, void **data_ptr);
 
 static u_size GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr );
 
+static u_size GetUsersListData( client_t **users, u_size n_users, void **data_ptr );
+
 
 /************************************************************/
 
@@ -263,9 +265,14 @@ Session(void *data,int socket)
 		case __LIST_MOVIES_BY_GEN__:
 			/* Lista de peliculas por genero */
 			GetGenPack(data+header_size,&gen);
-			fprintf(stderr,"Llego un pedido de --listar-- de user:%s passwd:%s\n",header.user,header.passwd);
+			fprintf(stderr,"Llego un pedido de --listarpeliculas-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return ListMoviesByGen(gen,socket);
-			break;				
+			break;
+		case __LIST_USERS__:
+			/* Comprar pelicula */
+			fprintf(stderr,"Llego un pedido de --listarusuarios-- de user:%s passwd:%s\n",header.user,header.passwd);
+			return ListUsers(socket);
+			break;
 		case __BUY_MOVIE__:
 			/* Comprar pelicula */
 			fprintf(stderr,"Llego un pedido de --buymovie-- de user:%s passwd:%s\n",header.user,header.passwd);
@@ -460,6 +467,42 @@ ListMoviesByGen(list_movie_request_t gen, int socket)
 	
 	return OK;
 }
+
+/* case __LIST_USERS__ */
+
+status
+ListUsers(int socket)
+{
+	client_t **list;
+	header_t header;
+	int ret_code;
+	void *list_data;
+	void *header_data;
+	u_size list_size;
+	u_size header_size;
+	int users_count;
+	
+	ret_code = __LIST_USERS_OK__;
+	
+	if( (users_count=GetUsersList(ld,&list)) < 0  ) {
+		ret_code = __LIST_USERS_ERROR__;
+	}
+	else {
+		if( users_count > 0 )
+			list_size = GetUsersListData(list,users_count,&list_data);
+		ret_code = __LIST_USERS_OK__;
+	}
+	
+	header.total_objects = users_count;
+	header.opCode		 = ret_code;
+	header_size = GetHeaderData(header, &header_data);
+	
+	sendTCP(socket,header_data,header_size);
+	sendTCP(socket,list_data,list_size);
+	
+	return OK;
+}
+
 
 /* case __BUY_MOVIE__ */
 
@@ -1001,21 +1044,48 @@ GetHeaderData( header_t pack, void **data_ptr)
 }
 
 static u_size
-GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr )
+GetUsersListData( client_t **users, u_size n_users, void **data_ptr )
 {
 	void *data;
 	u_size size;
 	u_size pos;
 	
+	size = MAX_USER_LEN + MAX_USER_MAIL + MAX_USER_DESC + sizeof(unsigned char);
+	data = malloc(size * n_users);
 	
-	printf("number: %ld\n",n_movies);
+	pos = 0;
+	int i;
+	for(i=0;i<n_users;i++){
+		memmove(data+pos, users[i]->user, MAX_USER_LEN);
+		printf("%s\n",users[i]->user);
+		pos+=MAX_USER_LEN;
+		memmove(data+pos, users[i]->mail, MAX_USER_MAIL);
+		printf("%s\n",users[i]->mail);
+		pos+=MAX_USER_MAIL;
+		memmove(data+pos, users[i]->desc, MAX_USER_DESC);
+		printf("%s\n",users[i]->desc);
+		pos+=MAX_USER_DESC;
+		memmove(data+pos, &(users[i]->level), sizeof(unsigned char));
+		printf("%d\n",users[i]->level);
+		pos+=sizeof(unsigned char);
+	}
 	
+	*data_ptr = data;
+	return pos;		
+}
+
+static u_size
+GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr )
+{
+	void *data;
+	u_size size;
+	u_size pos;
+		
 	size = MAX_MOVIE_LEN + MAX_MOVIE_GEN + MAX_MOVIE_PLOT + sizeof(u_size) * 3 + M_SIZE;
 	data = malloc(size * n_movies);
 	
 	pos = 0;
 	int i;
-	printf("Empiezooo\n");
 	for(i=0;i<n_movies;i++){
 		memmove(data+pos, movies[i]->name, MAX_MOVIE_LEN);
 		pos+=MAX_MOVIE_LEN;
@@ -1031,8 +1101,6 @@ GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr )
 		pos+=sizeof(unsigned long);
 		memmove(data+pos, movies[i]->MD5, M_SIZE);
 		pos+=M_SIZE;
-		
-		printf("%d-",i);
 	}
 		
 	*data_ptr = data;

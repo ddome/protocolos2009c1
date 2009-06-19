@@ -14,7 +14,7 @@
 #include "../Common/app.h"
 
 /* Direccion por default */
-#define HOST "172.16.96.129" 
+#define HOST "192.168.3.129" 
 #define PORT 389
 
 /* Usuario root del ldap */
@@ -44,7 +44,7 @@ boolean PasswdIsValid(LDAP *ld, char *user, char *passwd);
 
 unsigned int GetUserLevel(LDAP *ld,char *user);
 
-client_t *GetUsersList(LDAP *ld);
+int GetUsersList(LDAP *ld,client_t ***list_ptr);
 
 void EndLdap(LDAP *ld);
 

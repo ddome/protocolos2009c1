@@ -156,7 +156,7 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
 				printf("Lista de peliculas de genero %s\n",aux1);
 				while(movies_list[i] != NULL) {
 					printf("------------------------------------------------\n");
-					printf("%s:\n", movies_list[i]->name);
+					printf("                   %s:							\n", movies_list[i]->name);
 					printf("------------------------------------------------\n");
 					printf("%s\n", movies_list[i]->plot);
 					printf("------------------------------------------------\n");
@@ -164,9 +164,12 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
 					printf("Precio: %ld\n", movies_list[i]->value);
 					printf("bytes: %ld\n", movies_list[i]->size);
 					printf("MD5: %s\n\n", movies_list[i]->MD5);	
+					
+					free(movies_list[i]);					
 					i++;
 				}
-				
+									
+				free(movies_list);
 				
 				break;
 			case LIST_ERROR:
@@ -185,6 +188,51 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
     return retValue;    
 }
 
+static int ListUsers_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+	client_t **users_list;
+	int i=0;
+	
+    if(!MoreTokensExist(scanner)) {
+		
+		switch( ListUsers(&users_list) ) {
+			case LIST_USERS_OK:
+				
+				printf("------------------------------------------------\n");
+				printf("                Lista de usuarios               \n");
+				printf("------------------------------------------------\n\n\n");
+				
+				while(users_list[i] != NULL) {
+					printf("------------------------------------------------\n");
+					printf("                     %s                         \n",users_list[i]->user);
+					printf("------------------------------------------------\n");
+					printf("%s\n",users_list[i]->desc);
+					printf("------------------------------------------------\n");
+					printf("Contacto: %s:\n",users_list[i]->mail);
+					printf("------------------------------------------------\n");
+					printf("Nivel de usuario: %d\n",users_list[i]->level);
+					printf("------------------------------------------------\n");
+					printf("************************************************\n");
+					printf("************************************************\n");
+
+					i++;
+				}				
+				
+				break;
+			case LIST_USERS_ERROR:
+				printf("Error al listar usuarios\n");
+				break;
+			default:
+				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		}
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
 
 static int NewAccount_Command(scannerADT scanner, void * data)
 {
@@ -347,11 +395,14 @@ static int BuyMovie_Command(scannerADT scanner, void * data)
 static int ShowCommands(scannerADT scanner, void * data)
 {
 
-    printf("Comandos disponibles:\n");
+	printf("------------------------------------------------\n");
+    printf("              Comandos disponibles              \n");
+	printf("------------------------------------------------\n");
 	printf("login user password\n");
 	printf("new user password rep_password mail description level\n");
 	printf("password newpassword rep_newpassword\n");
 	printf("listmovies gen\n");
+	printf("listusers\n");
 	printf("download ticket\n");
 	printf("buy movie_name pay_server_name pay_server_user pay_server_password\n");
 	printf("exit\n");
@@ -371,6 +422,7 @@ static void LoadTree(treeADT tree)
 	InsertExpression(tree, "buy",  BuyMovie_Command);
 	InsertExpression(tree, "download",  Download_Command);
 	InsertExpression(tree, "listmovies",  ListMoviesByGen_Command);
+	InsertExpression(tree, "listusers",  ListUsers_Command);
 	InsertExpression(tree, "logout",  Logout_Command);
     InsertExpression(tree, "help",   ShowCommands);
 	InsertExpression(tree, "exit",   Exit_Command);
