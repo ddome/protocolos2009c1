@@ -252,6 +252,66 @@ GetUserLevel(LDAP *ld,char *user)
 	return ret;
 }
 
+client_t *
+GetUsersList(LDAP *ld)
+{
+	LDAPMessage        *res, *e;
+	char               *a;
+	BerElement         *ptr;
+	char               **vals;
+	client_t aux;
+	client_t *ret;
+	
+	char filter[] = "(uid=*)"; 
+	
+	if ( ldap_search_s(ld, CLIENT_PATH, LDAP_SCOPE_SUBTREE,filter, NULL, 0, &res)!= LDAP_SUCCESS ) {
+		ldap_perror(ld, "ldap_search_s");
+		exit(1);
+	}
+		
+	int pos=0;
+	for (e = ldap_first_entry(ld, res); e != NULL; e = ldap_next_entry(ld, e)) {
+		
+		/* objectClass */
+		a = ldap_first_attribute(ld, e, &ptr);
+		/* ou */
+		a = ldap_next_attribute(ld, e, ptr);
+		/* cn */
+		a = ldap_next_attribute(ld, e, ptr);
+		/* uid */
+		a = ldap_next_attribute(ld, e, ptr);
+		vals = ldap_get_values(ld, e, a);	
+		strcpy(aux.user,vals[0]);		
+		ldap_value_free(vals);
+		/* mail */
+		a = ldap_next_attribute(ld, e, ptr);
+		vals = ldap_get_values(ld, e, a);	
+		strcpy(aux.mail,vals[0]);		
+		ldap_value_free(vals);
+		/* userPassword */
+		a = ldap_next_attribute(ld, e, ptr);
+		/* sn */
+		a = ldap_next_attribute(ld, e, ptr);
+		/* description */
+		a = ldap_next_attribute(ld, e, ptr);
+		vals = ldap_get_values(ld, e, a);	
+		strcpy(aux.desc,vals[0]);		
+		ldap_value_free(vals);
+		/* level */
+		a = ldap_next_attribute(ld, e, ptr);	
+		vals = ldap_get_values(ld, e, a);	
+		aux.level = atoi(vals[0]);		
+		ldap_value_free(vals);
+		
+		ret[pos++] = aux;
+	}
+	
+	ldap_msgfree(res);
+	
+	return ret;
+}
+
+
 void 
 EndLdap(LDAP *ld)
 {
