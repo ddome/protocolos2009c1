@@ -139,10 +139,10 @@ StartPaymentServer(void)
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
 	printf("Corriendo...OK\n");
-	MandarPaquetes1();
-	MandarPaquetes2();
-	MandarPaquetes3();
-	MandarPaquetes4();
+	//MandarPaquetes1();
+	//MandarPaquetes2();
+	//MandarPaquetes3();
+	//MandarPaquetes4();
 	while(1) {
 		
 		memcpy(&rfds, &afds, sizeof(rfds));
