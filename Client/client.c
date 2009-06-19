@@ -557,8 +557,14 @@ ListUsers(client_t ***users_list_ptr)
 	client_t **users_list;
 	
 	/* Mando el pedido */
-	if( (n_users=SendListUsersRequest(&users_list)) < 0 )
-		return LIST_USERS_ERROR;
+	if( (n_users=SendListUsersRequest(&users_list)) == -2 ) {
+		/* El usuario debe loguearse devuelta */
+		if( strcmp(log_user, "anonimo") != 0 )
+			strcpy(log_user, "anonimo");
+		return LIST_USERS_NOT_LOG;
+	}
+	else if( n_users == -1 )
+		return LIST_ERROR;
 	else {
 		if( n_users == 0 ) {
 			*users_list_ptr = NULL;
@@ -612,7 +618,10 @@ SendListUsersRequest(client_t ***out_ptr)
 		free(ack_users);
 	}
 	else {
-		return -1;
+		if(  ack_header.opCode == __USER_ACCESS_DENY__ || ack_header.opCode == __USER_IS_NOT_LOG__ )  
+			return -2;
+		else
+			return -1;
 	}
 		
 	

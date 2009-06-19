@@ -223,6 +223,14 @@ static int ListUsers_Command(scannerADT scanner, void * data)
 			case LIST_USERS_ERROR:
 				printf("Error al listar usuarios\n");
 				break;
+			case LIST_USERS_NOT_LOG:
+				if( strcmp(user, "anonimo") != 0 ) {
+					printf("Ha sido deslogueado desde otra terminal\n");
+					strcpy(user, "anonimo");
+				}
+				else
+					printf("Debe estar logueado para listar usuarios\n");
+				break;
 			default:
 				printf("Se ha producido un error al intentar conectarse al servidor\n");
 		}

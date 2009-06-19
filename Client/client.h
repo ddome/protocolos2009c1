@@ -39,7 +39,7 @@ typedef enum client_buy_movie_status { BUY_INVALID_MOVIE=-7,BUY_PASS_ERROR=-6,BU
 
 typedef enum client_list_movies_by_gen_status { LIST_ERROR=-1, LIST_OK=1 } client_list_movies_by_gen_status;
 
-typedef enum list_users_status { LIST_USERS_ERROR=-1, LIST_USERS_OK=1 } list_users_status;
+typedef enum list_users_status { LIST_USERS_NOT_LOG=-2,LIST_USERS_ERROR=-1, LIST_USERS_OK=1 } list_users_status;
 
 status InitClient(char *host,char *port);
 status StartClient(void);
