@@ -271,7 +271,7 @@ Session(void *data,int socket)
 		case __LIST_USERS__:
 			/* Comprar pelicula */
 			fprintf(stderr,"Llego un pedido de --listarusuarios-- de user:%s passwd:%s\n",header.user,header.passwd);
-			return ListUsers(socket);
+			return ListUsers(socket,header.user,header.passwd);
 			break;
 		case __BUY_MOVIE__:
 			/* Comprar pelicula */
@@ -471,7 +471,7 @@ ListMoviesByGen(list_movie_request_t gen, int socket)
 /* case __LIST_USERS__ */
 
 status
-ListUsers(int socket)
+ListUsers(int socket,char *user, char* passwd)
 {
 	client_t **list;
 	header_t header;
@@ -484,13 +484,24 @@ ListUsers(int socket)
 	
 	ret_code = __LIST_USERS_OK__;
 	
-	if( (users_count=GetUsersList(ld,&list)) < 0  ) {
-		ret_code = __LIST_USERS_ERROR__;
+	/* Me fijo si esta logueado */
+	if( strcmp(user, "anonimo") == 0 ) {
+		ret_code = __USER_IS_NOT_LOG__;
 	}
-	else {
-		if( users_count > 0 )
-			list_size = GetUsersListData(list,users_count,&list_data);
-		ret_code = __LIST_USERS_OK__;
+	/* Control de la identidad del solicitante */
+	else if( !UserCanAcces(user, passwd) ) {
+		ret_code = __USER_ACCESS_DENY__;
+	}
+	
+	if( ret_code == __LIST_USERS_OK__ ) {
+		if( (users_count=GetUsersList(ld,&list)) < 0  ) {
+			ret_code = __LIST_USERS_ERROR__;
+		}
+		else {
+			if( users_count > 0 )
+				list_size = GetUsersListData(list,users_count,&list_data);
+			ret_code = __LIST_USERS_OK__;
+		}
 	}
 	
 	header.total_objects = users_count;
@@ -498,7 +509,9 @@ ListUsers(int socket)
 	header_size = GetHeaderData(header, &header_data);
 	
 	sendTCP(socket,header_data,header_size);
-	sendTCP(socket,list_data,list_size);
+	
+	if( ret_code == __LIST_USERS_OK__ )
+		sendTCP(socket,list_data,list_size);
 	
 	return OK;
 }

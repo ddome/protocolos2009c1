@@ -57,7 +57,7 @@ status UserStartDownload(download_start_t start,int socket, char *user, char *pa
 
 status ListMoviesByGen(list_movie_request_t gen, int socket);
 
-status ListUsers(int socket);
+status ListUsers(int socket,char *user, char* passwd);
 
 /*************************************************************************/
 
