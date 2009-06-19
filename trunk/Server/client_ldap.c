@@ -306,7 +306,7 @@ GetUsersList(LDAP *ld)
 		
 		ret[pos++] = aux;
 	}
-	ret[pos] = NULL;
+
 	
 	ldap_msgfree(res);
 	
