@@ -33,6 +33,8 @@ struct hashCDT
 static int InitTable(hashADT hash);
 static int Rehash(hashADT hash);        
 
+static char *ReadLine( FILE * inputFile );
+
 hashADT
 NewHash(int esize, hashCmp hcmp, hashKey hkey,hashSaveItem hsave,hashLoadItem hload)
 {
@@ -339,6 +341,7 @@ SaveHashTable(hashADT table,char *path)
 
 	if( (fd=fopen(path,"w+")) == NULL )
 		return -1;
+	fprintf(fd, "%s", "AccountName;AccountNumber;SecurityCode;Amount\n");
 	for(i=0;i<table->tabledim;i++) {
 		if( table->htable[i].status == OCCUPIED )
 			table->hsave(fd,table->htable[i].data);
@@ -352,12 +355,20 @@ LoadHashTable(char *path,int esize, hashCmp hcmp, hashKey hkey,hashSaveItem hsav
 {
 	hashADT table = NewHash(esize,hcmp,hkey,hsave,hload);
 	FILE *fd;
+	char * aux;
 	hashElementT data;
 
 	if((fd=fopen(path,"r"))==NULL) {		
 		return NewHash(esize, hcmp, hkey, hsave,hload);
 	}
-	
+	aux = ReadLine(fd);
+	if(aux == NULL || 
+		strcmp(aux, "AccountName;AccountNumber;SecurityCode;Amount\n")!= 0)
+	{
+		printf("\nArchivo de cuentas mal formado.\n");
+		printf("Provea un archivo valido, y reinicie el servidor.\n");
+		return NewHash(esize, hcmp, hkey, hsave,hload);
+	}
 	while( (data=hload(fd)) != NULL ) {
 		HInsert(table,data);
 	}
@@ -421,4 +432,24 @@ InitTable(hashADT hash)
         }
        
         return TABLE_INIT_SIZE;
+}
+
+static char *
+ReadLine( FILE * inputFile )
+{
+    char line[255+ 1];
+    char * resp;
+    int len;
+	
+    if( fgets( line, 255, inputFile ) ==NULL )
+		return NULL;
+    if( ((len = strlen( line )) == 0) || ((len = strlen( line )) == 1 ) )
+        return NULL;
+    line[len-1] = '\n';
+    line[len] = '\0';
+	
+    resp = malloc( (len + 1) * sizeof(char) );
+    strncpy(resp, line, len + 1);
+	
+    return (resp);
 }
