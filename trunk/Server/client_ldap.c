@@ -215,7 +215,7 @@ ChangePasswd(LDAP *ld, char *user, char *passwd)
 		return ERROR;
 	}
 	
-	//free(dn);
+	free(dn);
 	
 	return OK;
 }
@@ -252,15 +252,15 @@ GetUserLevel(LDAP *ld,char *user)
 	return ret;
 }
 
-client_t *
-GetUsersList(LDAP *ld)
+int
+GetUsersList(LDAP *ld,client_t ***list_ptr)
 {
 	LDAPMessage        *res, *e;
 	char               *a;
 	BerElement         *ptr;
 	char               **vals;
 	client_t aux;
-	client_t *ret;
+	client_t **ret;
 	
 	char filter[] = "(uid=*)"; 
 	
@@ -269,48 +269,77 @@ GetUsersList(LDAP *ld)
 		exit(1);
 	}
 	
-	ret = malloc(sizeof(client_t)*30);//cambiar esto
+	ret = malloc(sizeof(client_t*)*30);//cambiar esto
 	int pos=0;
 	for (e = ldap_first_entry(ld, res); e != NULL; e = ldap_next_entry(ld, e)) {
 		
+		printf("%s\n",ldap_get_dn(ld,e));
+		
 		/* objectClass */
 		a = ldap_first_attribute(ld, e, &ptr);
+		vals = ldap_get_values(ld, e, a);
+		printf("object:%s\n",vals[0]);
+		
 		/* ou */
 		a = ldap_next_attribute(ld, e, ptr);
+		vals = ldap_get_values(ld, e, a);
+		printf("ou:%s\n",vals[0]);
+		
 		/* cn */
 		a = ldap_next_attribute(ld, e, ptr);
+		vals = ldap_get_values(ld, e, a);
+		printf("cn:%s\n",vals[0]);
+		
 		/* uid */
 		a = ldap_next_attribute(ld, e, ptr);
-		vals = ldap_get_values(ld, e, a);	
+		vals = ldap_get_values(ld, e, a);
+		printf("uid:%s\n",vals[0]);
+		
 		strcpy(aux.user,vals[0]);		
 		ldap_value_free(vals);
 		/* mail */
 		a = ldap_next_attribute(ld, e, ptr);
-		vals = ldap_get_values(ld, e, a);	
+		vals = ldap_get_values(ld, e, a);		
+		printf("mail:%s\n",vals[0]);
+		
 		strcpy(aux.mail,vals[0]);		
 		ldap_value_free(vals);
-		/* userPassword */
+		/* userPass */
 		a = ldap_next_attribute(ld, e, ptr);
+		vals = ldap_get_values(ld, e, a);
+		printf("pass:%s\n",vals[0]);
 		/* sn */
 		a = ldap_next_attribute(ld, e, ptr);
+		vals = ldap_get_values(ld, e, a);
+		printf("sn:%s\n",vals[0]);
 		/* description */
 		a = ldap_next_attribute(ld, e, ptr);
 		vals = ldap_get_values(ld, e, a);	
+		printf("description%s\n",vals[0]);
+		
 		strcpy(aux.desc,vals[0]);		
 		ldap_value_free(vals);
+		
 		/* level */
 		a = ldap_next_attribute(ld, e, ptr);	
 		vals = ldap_get_values(ld, e, a);	
+		
+		printf("%s\n",vals[0]);
+		
 		aux.level = atoi(vals[0]);		
 		ldap_value_free(vals);
 		
-		ret[pos++] = aux;
+		ret[pos] = malloc(sizeof(client_t));
+		*(ret[pos]) = aux;
+		pos++;
 	}
 
+	ret[pos] = NULL;
 	
+	*list_ptr = ret;
 	ldap_msgfree(res);
 	
-	return ret;
+	return pos;
 }
 
 

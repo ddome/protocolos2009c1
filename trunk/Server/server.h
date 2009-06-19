@@ -35,7 +35,6 @@ status StartServer(void);
 
 void EndServer(void);
 
-
 /*************************************************************************/
 /*                           Atencion de pedidos		 	 */
 /*************************************************************************/
@@ -57,6 +56,8 @@ status UserDownload(request_t req,int socket,char *user,char *passwd);
 status UserStartDownload(download_start_t start,int socket, char *user, char *passwd);
 
 status ListMoviesByGen(list_movie_request_t gen, int socket);
+
+status ListUsers(int socket);
 
 /*************************************************************************/
 

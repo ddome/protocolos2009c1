@@ -38,6 +38,8 @@ static status ProcessDownload(void *packet);
 
 static movie_t ** GetMovies(void *data, u_size number);
 
+static int SendListUsersRequest(client_t ***out_ptr);
+
 
 /* GetData(packet) */
 
@@ -64,6 +66,8 @@ static u_size GetDownloadPack( void *data, download_t *pack);
 static u_size GetBuyTicketPack( void *data, buy_movie_ticket_t *pack);
 
 static u_size GetHeaderPack(void *data, header_t *header);
+
+static client_t ** GetUsersList(void *data, u_size number);
 
 /*PID del proceso que escucha nuecas descargas*/
 pid_t downloader_pid;
@@ -514,10 +518,10 @@ UserDownload(char * ticket)
 	return ret;
 }
 
-client_list_movies_by_gen
+client_list_movies_by_gen_status
 ListMoviesByGen(char *gen, movie_t ***movie_list_ptr)
 {
-	client_user_reg ret = REG_OK;
+	client_list_movies_by_gen_status ret = LIST_OK;
 	list_movie_request_t list_movies_request;
 
 	void *data;
@@ -544,7 +548,78 @@ ListMoviesByGen(char *gen, movie_t ***movie_list_ptr)
 	return ret;
 }
 
+list_users_status
+ListUsers(client_t ***users_list_ptr)
+{
+	list_users_status ret = LIST_USERS_OK;
+	
+	int n_users;
+	client_t **users_list;
+	
+	/* Mando el pedido */
+	if( (n_users=SendListUsersRequest(&users_list)) < 0 )
+		return LIST_USERS_ERROR;
+	else {
+		if( n_users == 0 ) {
+			*users_list_ptr = NULL;
+			ret = LIST_USERS_OK;
+		}
+		else{
+			*users_list_ptr = users_list;
+			ret = LIST_USERS_OK;
+		}
+	}
+	
+	return ret;
+}
+
 /* Static Functions */
+
+static int
+SendListUsersRequest(client_t ***out_ptr)
+{
+	header_t header;
+	header_t ack_header;
+	void *ack_users;
+	int socket;
+	void *header_data;
+	u_size header_size;
+	
+	/* Tipo de pedido */
+	header.opCode = __LIST_USERS__;
+	header.total_objects = 1;
+	/* Identificacion del usuario */
+	strcpy(header.user,log_user);
+	strcpy(header.passwd,log_passwd);
+	header_size = GetHeaderData(header, &header_data);	
+	
+	/* Me conecto al servidor */
+	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+		free(header_data);
+		return -1;
+	}
+	/* Mando el paquete */
+	sendTCP(socket, header_data,header_size);
+	free(header_data);
+	
+	/* Espero por la respuesta del servidor */
+	GetHeaderPack(receiveTCP(socket),&ack_header);
+	
+	if( ack_header.opCode == __LIST_USERS_OK__ ) {
+		
+		ack_users = receiveTCP(socket);
+		*out_ptr = GetUsersList(ack_users,ack_header.total_objects);
+		free(ack_users);
+	}
+	else {
+		return -1;
+	}
+		
+	
+	close(socket);
+	return ack_header.total_objects;	
+	
+}
 
 static unsigned long
 SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr)
@@ -623,6 +698,32 @@ GetMovies(void *data, u_size number)
 		pos+=sizeof(u_size);
 		memmove(list[i]->MD5, data+pos, M_SIZE);
 		pos+=M_SIZE;		
+	}
+	
+	list[i] = NULL;
+	return list;	
+}
+
+static client_t **
+GetUsersList(void *data, u_size number)
+{
+	int i;
+	client_t **list = malloc(sizeof(client_t*)*(number+1));
+	
+	u_size pos = 0;
+	for(i=0;i<number;i++){
+		
+		list[i] = malloc(sizeof(client_t));
+		
+		memmove(list[i]->user, data+pos, MAX_USER_LEN);
+		pos+=MAX_USER_LEN;
+		memmove(list[i]->mail, data+pos, MAX_USER_MAIL);
+		pos+=MAX_USER_MAIL;
+		memmove(list[i]->desc, data+pos, MAX_USER_DESC);
+		pos+=MAX_USER_DESC;
+		memmove(&(list[i]->level), data+pos, sizeof(unsigned char));
+		pos+=sizeof(unsigned char);
+
 	}
 	
 	list[i] = NULL;

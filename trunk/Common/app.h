@@ -28,7 +28,7 @@
 
 #define MAX_TICKET_LEN 20
 
-#define _FILE_SIZE_ 1000000L
+#define _FILE_SIZE_ 100L
 
 /* Codigos del pedido (opCode) */
 
@@ -77,6 +77,11 @@
 #define __LIST_GENS__			 26L
 #define __LIST_OK__				 27L
 #define __LIST_ERROR__			 28L
+
+/* Codigos para consultar usuarios */
+#define __LIST_USERS__			 29L
+#define __LIST_USERS_OK__	     30L
+#define __LIST_USERS_ERROR__		 31L
  
 /* Estructuras del protocolo de aplicacion */
 

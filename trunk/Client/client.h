@@ -37,7 +37,9 @@ typedef enum client_download_status { DOWNLOAD_CONNECT_ERROR=-4, DOWNLOAD_USER_N
 
 typedef enum client_buy_movie_status { BUY_INVALID_MOVIE=-7,BUY_PASS_ERROR=-6,BUY_USER_ERROR=-5,BUY_CONNECT_ERROR=-4, BUY_USER_NOT_LOG=-3,BUY_ACCES_DENY=-2,BUY_ERROR=-1,BUY_OK=1 } client_buy_movie_status;
 
-typedef enum client_list_movies_by_gen { LIST_ERROR=-1, LIST_OK=1 } client_list_movies_by_gen;
+typedef enum client_list_movies_by_gen_status { LIST_ERROR=-1, LIST_OK=1 } client_list_movies_by_gen_status;
+
+typedef enum list_users_status { LIST_USERS_ERROR=-1, LIST_USERS_OK=1 } list_users_status;
 
 status InitClient(char *host,char *port);
 status StartClient(void);
@@ -57,7 +59,9 @@ client_download_status UserDownload(char * ticket);
 
 client_buy_movie_status UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, char *ticket_ret);
 
-client_list_movies_by_gen ListMoviesByGen(char *gen,movie_t ***movie_list_ptr);
+client_list_movies_by_gen_status ListMoviesByGen(char *gen,movie_t ***movie_list_ptr);
+
+list_users_status ListUsers(client_t ***users_list_ptr);
 
 void UserExit(void);
 
