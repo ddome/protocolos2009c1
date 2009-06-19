@@ -426,11 +426,13 @@ UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, c
 		case __BUY_MOVIE_INVALID__:
 			ret = BUY_INVALID_MOVIE;
 			break;
-
+        case __BUY_MOVIE_NO_CASH__:
+            ret = BUY_MOVIE_NO_CASH;
+            break;
 		default:
 			ret = BUY_CONNECT_ERROR;
 			break;
-	}
+    }
 	return ret;
 }
 

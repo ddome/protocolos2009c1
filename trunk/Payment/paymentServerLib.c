@@ -112,7 +112,6 @@ char * MakePSReply(replyPS_t reply)
         strncpy(resp + size, "\n", 1);
         size++;
     }
-    printf("\n%s\n", resp);
     return resp;
 }
 
@@ -262,7 +261,6 @@ MakePSRequest(requestPS_t req)
     resp[size] = '\0';
 
     printf("\n%s\n", resp);
-    getchar();
     return resp;
 
 }

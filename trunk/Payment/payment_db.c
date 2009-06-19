@@ -45,26 +45,26 @@ psLoad(FILE *fd)
 	char line[50];
 	char *token;
 
-	if( fgets(line,127,fd) == NULL )
+	if( fgets(line,512,fd) == NULL )
 		return NULL;
 
 	token = strtok (line,";");
-	if( token == NULL )
+    if( token == NULL || strlen(token) > MAXNAME)
 		return NULL;
 	strcpy(c->accountName,token);
 
 	token = strtok (NULL,";");
-	if( token == NULL )
+    if( token == NULL || strlen(token) > MAXACCOUNTNUM)
 		return NULL;
 	strcpy(c->accountNumber,token);
 
 	token = strtok (NULL,";");
-	if( token == NULL )
+	if( token == NULL || strlen(token) > 6)
 		return NULL;
 	c->securityCode = atoi(token);
 
 	token = strtok (NULL,";");
-	if( token == NULL )
+	if( token == NULL)
 		return NULL;
         sscanf(token, "%f", &(c->amount));
 	

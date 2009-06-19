@@ -40,7 +40,11 @@ typedef enum client_logout_status { LOG_OUT_CONNECT_ERROR=-4, LOG_OUT_USER_NOT_L
 
 typedef enum client_download_status { DOWNLOAD_CONNECT_ERROR=-4, DOWNLOAD_USER_NOT_LOG=-3,DOWNLOAD_ACCES_DENY=-2,DOWNLOAD_ERROR=-1,DOWNLOAD_OK=1 } client_download_status;
 
-typedef enum client_buy_movie_status { BUY_INVALID_MOVIE=-7,BUY_PASS_ERROR=-6,BUY_USER_ERROR=-5,BUY_CONNECT_ERROR=-4, BUY_USER_NOT_LOG=-3,BUY_ACCES_DENY=-2,BUY_ERROR=-1,BUY_OK=1 } client_buy_movie_status;
+typedef enum client_buy_movie_status { 
+    BUY_MOVIE_USER_ERROR = -9,BUY_MOVIE_NO_CASH=-8,BUY_INVALID_MOVIE=-7,BUY_PASS_ERROR=-6,
+    BUY_USER_ERROR=-5,BUY_CONNECT_ERROR=-4,BUY_USER_NOT_LOG=-3,BUY_ACCES_DENY=-2,
+    BUY_ERROR=-1,BUY_OK=1 
+} client_buy_movie_status;
 
 typedef enum client_list_movies_by_gen_status { LIST_ERROR=-1, LIST_OK=1 } client_list_movies_by_gen_status;
 

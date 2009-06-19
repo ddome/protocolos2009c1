@@ -119,8 +119,8 @@ HInsert(hashADT hash, hashElementT data)
                
                 else
                 {
-                        /* Se encontro lugar, se insertar en la primera baja logica si es que la hubo
-                         * o en la celda vacia */
+                        /* Se encontro lugar, se insertar en la primera baja logica si es 
+                         * que la hubo o en la celda vacia */
                         if (firstLogic != -1)
                         {
                                 htable[firstLogic].status = OCCUPIED;
@@ -133,7 +133,6 @@ HInsert(hashADT hash, hashElementT data)
                                 hash -> htable[pos].status = OCCUPIED;
                                 if ( (htable[pos].data = malloc(hash -> datasize)) == NULL )
                                 {
-                                       
                                         return 0;
                                 }
                                 memcpy(htable[pos].data, data, hash -> datasize);
@@ -372,6 +371,7 @@ LoadHashTable(char *path,int esize, hashCmp hcmp, hashKey hkey,hashSaveItem hsav
 	while( (data=hload(fd)) != NULL ) {
 		HInsert(table,data);
 	}
+    free(aux);
 	fclose(fd);
 	return table;
 }

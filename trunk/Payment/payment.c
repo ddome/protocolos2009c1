@@ -55,7 +55,8 @@ InitPaymentServer(void)
     
     /* Inicializar Base de Datos
     */
-    psDatabase =  LoadHashTable(PAYMENT_DB, 150, psComp, psHash, psSave, psLoad);
+    psDatabase =  LoadHashTable(PAYMENT_DB, sizeof(psClient_t), 
+                                psComp, psHash, psSave, psLoad);
     if(psDatabase == NULL)
     {
         return FATAL_ERROR;
@@ -141,11 +142,11 @@ StartPaymentServer(void)
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
     InitMessage();
-	MandarPaquetes1();
-	MandarPaquetes2();
-	MandarPaquetes3();
-	MandarPaquetes4();
-	/*while(1) {
+	//MandarPaquetes1();
+	//MandarPaquetes2();
+	//MandarPaquetes3();
+	//MandarPaquetes4();
+	while(1) {
 		
 		memcpy(&rfds, &afds, sizeof(rfds));
 		
@@ -155,7 +156,7 @@ StartPaymentServer(void)
 		}
 		
 		/* Si es una nueva conexion la agrego */
-	/*	if (FD_ISSET(passive_s, &rfds)) {
+		if (FD_ISSET(passive_s, &rfds)) {
 						
 			if( (ssock=acceptTCP(passive_s)) <= 0 ) {
 				printf("Fallo acceptTCP() - retCode=(%d)\n",ssock);
@@ -166,12 +167,12 @@ StartPaymentServer(void)
 		}
 		
 		/* Atiendo cada pedido */
-		/*for(fd=0; fd<nfds; ++fd) {
+		for(fd=0; fd<nfds; ++fd) {
 			if (fd != passive_s && FD_ISSET(fd, &rfds)) {
 								
 				data=receiveTCP(fd);
 				/* Proceso el paquete */
-		/*		if( Session(data,fd) != FATAL_ERROR ) {
+				if( Session(data,fd) != FATAL_ERROR ) {
 					close(fd); // Tengo que cerrar la conexion?
 					FD_CLR(fd, &afds);
 					free(data);
@@ -181,7 +182,7 @@ StartPaymentServer(void)
 				}
 			}
 		}
-	}	*/
+	}	
 	closeTCP(passive_s);
 	
 	return OK;
@@ -337,32 +338,12 @@ GetNextTransactionId(void)
 static void 
 InitMessage(void)
 {
-    int i;
-    printf("\nInicializando TCP");
-    for(i = 0; i < 10; i++)
-    {
-        usleep(100000);
-        printf(".");
-    }
-    printf("OK\n");
-    printf("Inicializando base de datos");
-    for(i = 0; i < 10; i++)
-    {
-        usleep(100000);
-        printf(".");
-    }
-    printf("OK\n");
+    printf("\nInicializando TCP................OK\n");
+    printf("Inicializando base de datos........OK\n");
 }
 
 static void
 ExitMessage(void)
 {
-    int i;
-    printf("\nLiberando recursos");
-    for(i = 0; i < 10; i++)
-    {
-        usleep(100000);
-        printf(".");
-    }
-    printf("OK\n");
+    printf("\nLiberando recursos...............OK\n");
 }
