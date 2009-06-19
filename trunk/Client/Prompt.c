@@ -153,18 +153,18 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
 				
 
 				printf("------------------------------------------------\n");
-				printf("Lista de peliculas de genero %s\n",aux1);
+				printf("  Lista de peliculas de genero %s\n",aux1);
+				printf("------------------------------------------------\n");
 				while(movies_list[i] != NULL) {
 					printf("------------------------------------------------\n");
 					printf("                   %s:							\n", movies_list[i]->name);
 					printf("------------------------------------------------\n");
 					printf("%s\n", movies_list[i]->plot);
-					printf("------------------------------------------------\n");
-					printf("Duracion: %ld\n", movies_list[i]->duration);
-					printf("Precio: %ld\n", movies_list[i]->value);
-					printf("bytes: %ld\n", movies_list[i]->size);
-					printf("MD5: %s\n\n", movies_list[i]->MD5);	
-					
+					printf("Duracion: %ld minutos \n", movies_list[i]->duration);
+					printf("Precio: $%ld\n", movies_list[i]->value);
+					printf("Size: %ld bytes \n", movies_list[i]->size);
+					printf("MD5: %s \n", movies_list[i]->MD5);	
+					printf("------------------------------------------------\n\n");
 					free(movies_list[i]);					
 					i++;
 				}
@@ -200,21 +200,17 @@ static int ListUsers_Command(scannerADT scanner, void * data)
 			case LIST_USERS_OK:
 				
 				printf("------------------------------------------------\n");
-				printf("                Lista de usuarios               \n");
+				printf("|               Lista de usuarios               |\n");
 				printf("------------------------------------------------\n\n\n");
 				
 				while(users_list[i] != NULL) {
 					printf("------------------------------------------------\n");
 					printf("                     %s                         \n",users_list[i]->user);
 					printf("------------------------------------------------\n");
-					printf("%s\n",users_list[i]->desc);
-					printf("------------------------------------------------\n");
-					printf("Contacto: %s:\n",users_list[i]->mail);
-					printf("------------------------------------------------\n");
-					printf("Nivel de usuario: %d\n",users_list[i]->level);
-					printf("------------------------------------------------\n");
-					printf("************************************************\n");
-					printf("************************************************\n");
+					printf("%s                                              \n",users_list[i]->desc);
+					printf("Contacto: %s:                                   \n",users_list[i]->mail);
+					printf("Nivel de usuario: %d                            \n",users_list[i]->level);
+					printf("------------------------------------------------\n\n");
 
 					i++;
 				}				

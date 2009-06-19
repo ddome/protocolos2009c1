@@ -41,6 +41,7 @@ static int Order(object_key_t k1, object_key_t k2) {
 static int Save(FILE *fd, object_key_t key,size_t key_size, void *object, size_t object_size) {
 	
 	int total;
+	
 	total = fwrite(key, key_size, 1, fd);
 	total += fwrite(object, object_size, 1, fd);	
 	return total;
