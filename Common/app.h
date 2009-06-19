@@ -28,7 +28,7 @@
 
 #define MAX_TICKET_LEN 20
 
-#define _FILE_SIZE_ 100000000L
+#define _FILE_SIZE_ 1000000L
 
 /* Codigos del pedido (opCode) */
 

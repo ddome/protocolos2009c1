@@ -14,6 +14,8 @@
 #include "../Common/TCPLib.h"
 #include "../Common/genlib.h"
 #include "../Common/app.h"
+#include <signal.h>
+#include <sys/types.h>
 
 #define CONNECT_ERROR -10
 
