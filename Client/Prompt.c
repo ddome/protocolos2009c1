@@ -411,7 +411,7 @@ static int Download_Command(scannerADT scanner, void * data)
 		switch( UserDownload(aux1) ) {
 				
 			case DOWNLOAD_ERROR:
-				printf("Se produjo un error al intentar descargar la pelicula\n");
+				printf("El ticket ha expirado\n");
 				break;
 			case DOWNLOAD_OK:
 				printf("Agregada a la seccion de descargas\n");
