@@ -10,19 +10,19 @@ CLIENT_SRC = Client
 SERVER_SRC = Server
 PL_SERVER = Lookup
 COMMON_SRC = Common
+PAYMENT_SRC = Payment
 DES_SRC = Common/des/source
 
 CLIENT_OBJ = client.o main.o Promt.o scannerADT.o tree.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o
 SERVER_OBJ = server.o main.o hashADT.o client_ldap.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o database_hanlder.o counter.o movieDB.o paymentServerLib.o scannerPS.o listADT.o md5.o
 PL_OBJ = main.o lookup.o list.o UDPLib.o hashADT.o
-PAYMENT = main.o hashADT.o payment.o payment_db.o paymentServerLib.o scannerPS.o
+PAYMENT_OBJ = main.o hashADT.o payment.o payment_db.o paymentServerLib.o scannerPS.o TCPLib.o
 
 
 CLIENT_NAME = client
 SERVER_NAME = server
 PL_NAME = lookup
-PAYMENT = Payment
-
+PAYMENT_NAME = payment
 all:
 	@-echo ""
 	@-echo "Compilando archivos comunes."
@@ -60,10 +60,11 @@ all:
 
 	@-echo ""
 	@-echo "Compilando el PaymentServer."
-	$(CC) $(CC_OP) main.o $(PAYMENT)/main.c
-	$(CC) $(CC_OP) hashADT.o $(PAYMENT)/hashADT.c
-	$(CC) $(CC_OP) payment.o $(PAYMENT)/payment.c
-	$(CC) $(CC_OP) payment_db.o $(PAYMENT)/payment_db.c
+	$(CC) $(CC_OP) main.o $(PAYMENT_SRC)/main.c
+	$(CC) $(CC_OP) hashADT.o $(PAYMENT_SRC)/hashADT.c
+	$(CC) $(CC_OP) payment.o $(PAYMENT_SRC)/payment.c
+	$(CC) $(CC_OP) payment_db.o $(PAYMENT_SRC)/payment_db.c
+	$(LD) $(LD_OP) $(PAYMENT_NAME) $(PAYMENT_OBJ)
 
 	@-echo ""
 	@-echo "Compilando el PaymentLookupServer."

@@ -27,6 +27,7 @@ static int GetNextTransactionId(void);
 static void InitMessage(void);
 static void ExitMessage(void);
 
+static int exitPipe=0;
 /* Functions
 */
 
@@ -37,10 +38,20 @@ static void ExitMessage(void);
 *  por protocolo TCP.
 */
 
+void
+sigpipeHandler(int signum)
+{
+	printf("Saliendo en sigpipeHandler procepso principal\n");
+	exitPipe=1;
+	return;
+}
+
 status 
 InitPaymentServer(void)
 {
 	int ret;
+
+	signal(SIGPIPE,sigpipeHandler);
     char ip[MAXIP];
     char port[MAXPORT];
     FILE * config;
@@ -58,7 +69,6 @@ InitPaymentServer(void)
     {
         fprintf(stderr, "Archivo de configuracion invalido o corrupto\n");
     }
-    
 	/* Iniciar TCP 
     */
 	if( (passive_s=prepareTCP(address.addresses[0].ip, 
@@ -189,6 +199,11 @@ Session(void *data,int socket)
 			printf("\nRequest Mal Formado\n");
 			free(ret);
 			sendTCP(socket, (void *) reply, strlen(reply) + 1);
+			if(exitPipe==1)
+			{
+			    exitPipe=0;
+			    return OK;
+			}
 		}		
 		return ERROR;
 	}
@@ -209,6 +224,11 @@ Session(void *data,int socket)
 			printf("\nCliente Invalido\n");
 			free(ret);
 			sendTCP(socket, (void *)reply, strlen(reply)+1);
+			if(exitPipe==1)
+			{
+			    exitPipe=0;
+			    return OK;
+			}
 		}		
 		return ERROR;
 	}
@@ -226,6 +246,11 @@ Session(void *data,int socket)
 			printf("\nDinero Insuficiente\n");
 			free(ret);
 			sendTCP(socket, (void*)reply, strlen(reply)+1);
+			if(exitPipe==1)
+			{
+			    exitPipe=0;
+			    return OK;
+			}
 		}
 		return ERROR;
 	}
@@ -245,7 +270,12 @@ Session(void *data,int socket)
 	HInsert(psDatabase, clientPtr);
 	SaveHashTable(psDatabase, PAYMENT_DB);
 	sendTCP(socket, (void*)reply, strlen(reply) + 1);
-    free(data);
+	free(data);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    return OK;
+	}
 	return OK;
 }
 
