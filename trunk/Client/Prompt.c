@@ -49,6 +49,15 @@ static char * ReadLine( FILE * inputFile )
     return (resp);
 }
 
+static char * AddSpaces(char * token){
+	int i;
+	for(i = 0; i< strlen(token); i++){
+		if( *(token + i) == '#'){
+			*(token+i) = ' ';
+		}
+	}
+	return token;
+}
 
 /* Comandos del Prompt
 */
@@ -56,6 +65,9 @@ static char * ReadLine( FILE * inputFile )
 
 static int Exit_Command(scannerADT scanner, void * data)
 {
+	if(MoreTokensExist(scanner)){
+		return _COMMAND_NOT_VALID_;
+	}
 	UserExit();
 	printf("Gracias por utilizar MovieStoreServer\n");
 
@@ -69,25 +81,32 @@ static int Login_Command(scannerADT scanner, void * data)
     char * aux1,*aux2;
     if(MoreTokensExist(scanner)) {
 		aux1=ReadToken(scanner);
-		aux2=ReadToken(scanner);
-		
-		switch( UserLogin(aux1, aux2) ) {
-			case LOGIN_USER_INVALID:
-				printf("El usuario es inexistente\n");
-				break;
-			case LOGIN_PASS_INVALID:
-				printf("La clave es invalida para el usuario solicitado\n");
-				break;
-			case USER_LOGIN_OK:
-				printf("%s, bienvenido a MovieStoreServer\n",aux1);
-				strcpy(user, aux1);
-				break;
-			default:
-				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		if(MoreTokensExist(scanner)){
+			aux2=ReadToken(scanner);
+			if(MoreTokensExist(scanner)){			
+				return _COMMAND_NOT_VALID_;
+			}
+
+			switch( UserLogin(aux1, aux2) ) {
+				case LOGIN_USER_INVALID:
+					printf("El usuario es inexistente\n");
+					break;
+				case LOGIN_PASS_INVALID:
+					printf("La clave es invalida para el usuario solicitado\n");
+					break;
+				case USER_LOGIN_OK:
+					printf("%s, bienvenido a MovieStoreServer\n",aux1);
+					strcpy(user, aux1);
+					break;
+				default:
+					printf("Se ha producido un error al intentar conectarse al servidor\n");
+			}
+			free(aux2);
 		}
-				
+		else{
+			retValue=_COMMAND_NOT_VALID_;
+		}	
 		free(aux1);
-		free(aux2);
     }
     else {
 		retValue=_COMMAND_NOT_VALID_;
@@ -102,34 +121,41 @@ static int ChangePassword_Command(scannerADT scanner, void * data)
     char * aux1,*aux2;
     if(MoreTokensExist(scanner)) {
 		aux1=ReadToken(scanner);
-		aux2=ReadToken(scanner);
+		if(MoreTokensExist(scanner)) {
+			aux2=ReadToken(scanner);
+			if(MoreTokensExist(scanner)){
+				return _COMMAND_NOT_VALID_;
+			}
 		
-		switch( UserChangePasswd(aux1, aux2) ) {
-			case CHANGE_LOG_ERROR:
-				printf("Debe estar logueado para realizar un cambio de contraseña\n");
-				if( strcmp(user, "anonimo") != 0 )
-					strcpy(user, "anonimo");
-				break;
-			case NEW_PASSWD_INVALID:
-				printf("La clave de seguridad no corresponde con la nueva clave ingresada\n");
-				break;
-			case CHANGE_ERROR:
-				printf("Se produjo un error al intentar cambiar la clave de usuario\n");
-				break;
-			case CHANGE_OK:
-				printf("Se ha cambiado su clave exitosamente\n");
-				break;
-			case CHANGE_ACCESS_DENY:
-				printf("El usuario ha sido deslogueado desde otra terminal\n");
-				if( strcmp(user, "anonimo") != 0 )
-					strcpy(user, "anonimo");
-				break;
-			default:
-				printf("Se ha producido un error al intentar conectarse al servidor\n");
+			switch( UserChangePasswd(aux1, aux2) ) {
+				case CHANGE_LOG_ERROR:
+					printf("Debe estar logueado para realizar un cambio de contraseña\n");
+					if( strcmp(user, "anonimo") != 0 )
+						strcpy(user, "anonimo");
+					break;
+				case NEW_PASSWD_INVALID:
+					printf("La clave de seguridad no corresponde con la nueva clave ingresada\n");
+					break;
+				case CHANGE_ERROR:
+					printf("Se produjo un error al intentar cambiar la clave de usuario\n");
+					break;
+				case CHANGE_OK:
+					printf("Se ha cambiado su clave exitosamente\n");
+					break;
+				case CHANGE_ACCESS_DENY:
+					printf("El usuario ha sido deslogueado desde otra terminal\n");
+					if( strcmp(user, "anonimo") != 0 )
+						strcpy(user, "anonimo");
+					break;
+				default:
+					printf("Se ha producido un error al intentar conectarse al servidor\n");
+			}
+			free(aux2);
 		}
-		
+		else{
+			retValue = _COMMAND_NOT_VALID_;
+		}
 		free(aux1);
-		free(aux2);
     }
     else {
 		retValue=_COMMAND_NOT_VALID_;
@@ -147,7 +173,9 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
 	
     if(MoreTokensExist(scanner)) {
 		aux1=ReadToken(scanner);
-		
+		if(MoreTokensExist(scanner)){
+			return _COMMAND_NOT_VALID_;
+		}
 		switch( ListMoviesByGen(aux1,&movies_list) ) {
 			case LIST_OK:
 				
@@ -203,7 +231,7 @@ static int ListGens_Command(scannerADT scanner, void * data)
 				printf("          Lista de generos disponibles		    \n");
 				printf("------------------------------------------------\n");
 				while(gens_list[i] != NULL) {
-					printf("%s\n",gens_list[i]);
+					printf("%s\n",(char *)gens_list[i]);
 					free(gens_list[i]);					
 					i++;
 				}
@@ -282,11 +310,29 @@ static int NewAccount_Command(scannerADT scanner, void * data)
     char * aux1,*aux2,*aux3,*aux4,*aux5,*aux6;
     if(MoreTokensExist(scanner)) {
 		aux1=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux2=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux3=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux4=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux5=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux6=ReadToken(scanner); /* pasar a int */
+		if(MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		
 		switch( UserRegistration(aux1, aux2, aux3, aux4, aux5, atoi(aux6) ) ) {
 				
@@ -396,11 +442,23 @@ static int BuyMovie_Command(scannerADT scanner, void * data)
 	
     if(MoreTokensExist(scanner)) {
 		aux1=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux2=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux3=ReadToken(scanner);
+		if(!MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		aux4=ReadToken(scanner);
+		if(MoreTokensExist(scanner)) {
+			return _COMMAND_NOT_VALID_;
+		}
 		
-		switch( UserBuyMovie(aux1,aux2,aux3,aux4,ticket) ) {
+		switch( UserBuyMovie(aux1,aux2,AddSpaces(aux3),aux4,ticket) ) {
 				
 			case BUY_ERROR:
 				printf("Se produjo un error al intentar comprar la pelicula\n");
