@@ -40,6 +40,8 @@ static movie_t ** GetMovies(void *data, u_size number);
 
 static int SendListUsersRequest(client_t ***out_ptr);
 
+static int SendListGensRequest(list_movie_request_t ***out_ptr);
+
 
 /* GetData(packet) */
 
@@ -635,7 +637,80 @@ ListUsers(client_t ***users_list_ptr)
 	return ret;
 }
 
+list_gens_t
+ListGens(list_movie_request_t *** gens_ptr)
+{
+	list_users_status ret = LIST_USERS_OK;
+	
+	int n_gens;
+	list_movie_request_t **gens_list;
+	
+	/* Mando el pedido */
+	if( (n_gens=SendListGensRequest(&gens_list)) == -1 ) {
+		return LIST_GENS_ERROR;
+	}
+	else {
+		if( n_gens == 0 ) {
+			*gens_ptr = NULL;
+			ret = LIST_GENS_OK;
+		}
+		else{
+			*gens_ptr = gens_list;
+			ret = LIST_GENS_OK;
+		}
+	}
+	
+	return ret;
+	
+}
+
 /* Static Functions */
+
+static int
+SendListGensRequest(list_movie_request_t ***out_ptr)
+{
+	header_t header;
+	header_t ack_header;
+	void *ack_gens;
+	int socket;
+	void *header_data;
+	u_size header_size;
+	
+	/* Tipo de pedido */
+	header.opCode = __LIST_GENS__;
+	header.total_objects = 1;
+	/* Identificacion del usuario */
+	strcpy(header.user,log_user);
+	strcpy(header.passwd,log_passwd);
+	header_size = GetHeaderData(header, &header_data);	
+	
+	/* Me conecto al servidor */
+	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+		free(header_data);
+		return -1;
+	}
+	/* Mando el paquete */
+	sendTCP(socket, header_data,header_size);
+	free(header_data);
+	
+	/* Espero por la respuesta del servidor */
+	GetHeaderPack(receiveTCP(socket),&ack_header);
+	
+	if( ack_header.opCode == __LIST_OK__ ) {
+		
+		ack_gens = receiveTCP(socket);
+		//*out_ptr = GetGenList(ack_gens,ack_header.total_objects);
+		free(ack_gens);
+	}
+	else {
+		return -1;
+	}
+	
+	
+	close(socket);
+	return ack_header.total_objects;	
+	
+}
 
 static int
 SendListUsersRequest(client_t ***out_ptr)

@@ -50,6 +50,9 @@ typedef enum client_list_movies_by_gen_status { LIST_ERROR=-1, LIST_OK=1 } clien
 
 typedef enum list_users_status { LIST_USERS_NOT_LOG=-2,LIST_USERS_ERROR=-1, LIST_USERS_OK=1 } list_users_status;
 
+typedef enum list_gens_t { LIST_GENS_ERROR=-1, LIST_GENS_OK=1 } list_gens_t;
+
+
 status InitClient(char *host,char *port);
 status StartClient(void);
 void EndClient(void);

@@ -3,7 +3,7 @@
 
 
 #include <stdio.h>
-#include "paymentServerLib.h"
+#include "../Common/paymentServerLib.h"
 
 int psComp( void * v1, void *v2 );
 

@@ -188,6 +188,47 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
     return retValue;    
 }
 
+static int ListGens_Command(scannerADT scanner, void * data)
+{
+    int retValue = _COMMAND_OK_;
+    char * aux1;
+	list_movie_request_t **gens_list;
+	int i=0;
+	
+    if(!MoreTokensExist(scanner)) {
+		
+		switch( ListGens(&gens_list) ) {
+			case LIST_OK:
+				
+				printf("------------------------------------------------\n");
+				printf("          Lista de generos disponibles		    \n");
+				printf("------------------------------------------------\n");
+				while(gens_list[i] != NULL) {
+					printf("%s\n",gens_list[i]);
+					free(gens_list[i]);					
+					i++;
+				}
+				
+				free(gens_list);
+				
+				break;
+			case LIST_ERROR:
+				printf("Genero inexistente\n");
+				break;
+			default:
+				printf("Se ha producido un error al intentar conectarse al servidor\n");
+		}
+		
+		free(aux1);
+    }
+    else {
+		retValue=_COMMAND_NOT_VALID_;
+    }
+	
+    return retValue;    
+}
+
+
 static int ListUsers_Command(scannerADT scanner, void * data)
 {
     int retValue = _COMMAND_OK_;
