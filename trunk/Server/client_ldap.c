@@ -269,7 +269,11 @@ GetUsersList(LDAP *ld,client_t ***list_ptr)
 		exit(1);
 	}
 	
-	ret = malloc(sizeof(client_t*)*30);//cambiar esto
+	int count=0;
+	for (e = ldap_first_entry(ld, res); e != NULL; e = ldap_next_entry(ld, e)) count++;
+	
+	
+	ret = malloc(sizeof(client_t*)*(count+1));
 	int pos=0;
 	for (e = ldap_first_entry(ld, res); e != NULL; e = ldap_next_entry(ld, e)) {
 		
