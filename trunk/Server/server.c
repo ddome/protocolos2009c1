@@ -467,7 +467,6 @@ ListMoviesByGen(list_movie_request_t gen, int socket)
 	}
 
 	header_size = GetHeaderData(header, &header_data);
-	sleep(30);
 	/* Mando el header */
 	sendTCP(socket, header_data, header_size);
 	if(exitPipe==1)
@@ -878,19 +877,19 @@ SendPaymentServerLocationRequest( char *name )
 	strncpy(lookup_server.dir_inet,HOST_LOOKUP,DIR_INET_LEN);
 	setSocketTimeoutUDP(socket,DEFAULT_TIMEOUT);
 	
-	do{
+	//do{
 	    sendUDP(socket, req_data, lookup_server);
 
 	    ack_data = receiveUDP(socket, &lookup_server);
 	    intentos++;
-	}while(ack_data==NULL && intentos<3);
+	/*}while(ack_data==NULL && intentos<3);
 	if(ack_data==NULL && intentos==3)
 	{
 	    printf("No me pude conectar");
 	    fflush(stdout);
 	    while(1)
 		;
-	}
+	}*/
 	GetPaymentLocationPack(ack_data,&ack);
 	
 	fprintf(stderr,"%s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);
