@@ -201,7 +201,8 @@ InitDB(dbADT db,char * pathName,hashADT files_info)
 		file_info_t * file_info=malloc(sizeof(file_info_t));
 		strcpy(file_info->name,movie->name);
 		strcpy(file_info->path, pathNameMovie);
-		strcpy(file_info->MD5, movie->MD5);	
+		strcpy(file_info->MD5, movie->MD5);
+		file_info->value = movie->value;
 		HInsert(files_info, file_info);
 	
 		free(movie);
@@ -289,8 +290,14 @@ BuildMovie(char * line,char ** pathNameRet)
     
     /*Costo de la pelicula*/
     aux=strtok(NULL,";");
-    if(aux!=NULL)
-		resp->value=(long)atoi(aux);
+    if(aux!=NULL){
+		int status=sscanf(aux,"%f",&resp->value);
+		printf("***%f***\n",resp->value);
+		if( status == 0 ){
+			free(resp);
+			return NULL;
+		}			
+	}
     else
     {
 		free(resp);

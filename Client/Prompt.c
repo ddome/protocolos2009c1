@@ -161,7 +161,7 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
 					printf("------------------------------------------------\n");
 					printf("%s\n", movies_list[i]->plot);
 					printf("Duracion: %ld minutos \n", movies_list[i]->duration);
-					printf("Precio: $%ld\n", movies_list[i]->value);
+					printf("Precio: $%0.2f\n", movies_list[i]->value);
 					printf("Size: %ld bytes \n", movies_list[i]->size);
 					printf("MD5: %s \n", movies_list[i]->MD5);	
 					printf("------------------------------------------------\n\n");

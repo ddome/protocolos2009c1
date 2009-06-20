@@ -38,6 +38,7 @@ typedef struct {
 	char name[MAX_MOVIE_LEN];
 	char path[MAX_PATH_LEN];
 	char MD5[M_SIZE];
+	float value;
 } file_info_t;
 
 /* Usuarios conectados */
