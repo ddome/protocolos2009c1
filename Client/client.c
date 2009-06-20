@@ -235,8 +235,6 @@ NewDownload(int ssock)
 	packet = receiveTCP(ssock);
 	if(packet==NULL)
 	{
-	    printf("TIMEOUT 1\n");
-	    fflush(0);
 	    raise(SIGINT);
 	}
 	header_size = GetDownloadPack(packet,&header);
@@ -254,13 +252,10 @@ NewDownload(int ssock)
 	
 	while (!exit) {
 		/* Recibo un paquete */
-		printf("ACA");
 		fflush(0);
 		packet = receiveTCP(ssock);
 		if(packet==NULL)
 		{
-		    printf("TIMEOUT 2\n");
-		    fflush(0);
 		    raise(SIGINT);
 		}
 		header_size = GetDownloadPack(packet,&header);

@@ -135,12 +135,21 @@ sigpipeHandler(int signum)
 	return;
 }
 
+void
+childHandler(int signum)
+{
+    printf("Termino un hijo\n");
+    fflush(0);
+    int i;
+    wait(&i);
+}
 
 status 
 InitServer(void)
 {
 	int ret;
 	signal(SIGPIPE,sigpipeHandler);
+	signal(SIGCHLD,sigpipeHandler);
 	/* Iniciar el servidor ldap */
 	if( (ld=InitLdap()) == NULL ) {
 		return FATAL_ERROR;
@@ -896,8 +905,11 @@ SendMovie(char *path,char *ip,char *port)
 		memmove(to_send,header_data, header_size);
 		memmove(to_send+header_size, data, bytes_read);
 		num = sendTCP(socket,to_send,header_size+bytes_read);
-		//if(i==3)
-		  //  sleep(20);	
+		if(exitPipe==1)
+		{
+		    exitPipe=0;
+		    exit(EXIT_FAILURE);
+		}
 		fprintf(stderr,"send %d/%ld\n", i,total_packets);
 		
 		free(data);
@@ -909,7 +921,7 @@ SendMovie(char *path,char *ip,char *port)
 	fclose(fd);
 	free(title);
 	fprintf(stderr,"Termine de transmitir\n");
-	return OK;
+	exit(EXIT_SUCCESS);
 }
 
 static payment_server_t
@@ -929,21 +941,20 @@ SendPaymentServerLocationRequest( char *name )
 	socket = prepareUDP(NULL, PORT_SERVER_UDP);
 	lookup_server.port=(unsigned short)atoi(PORT_LOOKUP);
 	strncpy(lookup_server.dir_inet,HOST_LOOKUP,DIR_INET_LEN);
-	setSocketTimeoutUDP(socket,DEFAULT_TIMEOUT);
+	setSocketTimeoutUDP(socket,3);
 	
-	//do{
+	do{
 	    sendUDP(socket, req_data, lookup_server);
 
 	    ack_data = receiveUDP(socket, &lookup_server);
 	    intentos++;
-	/*}while(ack_data==NULL && intentos<3);
+	}while(ack_data==NULL && intentos<3);
 	if(ack_data==NULL && intentos==3)
 	{
-	    printf("No me pude conectar");
-	    fflush(stdout);
-	    while(1)
-		;
-	}*/
+	    close(socket);
+	    strcpy(ack.name,"CONNECTION ERROR");
+	    return ack;
+	}
 	GetPaymentLocationPack(ack_data,&ack);
 	
 	fprintf(stderr,"%s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);
@@ -964,6 +975,9 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
     
 	if( strcmp(location.name,"NOT_EXISTS") == 0 ) {
 		return PAY_SERVER_ERROR;
+	}
+	if( strcmp(location.name,"CONNECTION ERROR") == 0 ) {
+	    return PAY_ERROR;
 	}
 		
     strcpy(request.clientServer, pay_name);
