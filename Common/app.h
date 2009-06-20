@@ -72,6 +72,7 @@
 #define __BUY_MOVIE_ERROR__		 24L
 #define __BUY_MOVIE_INVALID__	 25L
 #define __BUY_MOVIE_NO_CASH__    26L
+#define __BUY_MOVIE_SERVER_ERROR__ 40L
 
 /* Codigos para consultar peliculas */
 #define __LIST_MOVIES_BY_GEN__	 27L

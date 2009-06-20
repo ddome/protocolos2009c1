@@ -13,6 +13,8 @@
 #include "../Common/defines.h"
 #include "../Common/UDPLib.h"
 
+#define LOCATION "servers_location.txt"
+
 status  InitLookup(void);
 status  StartLookup(void);
 void    EndLookup(void);

@@ -27,7 +27,7 @@
 #include "database_handler.h"
 #include "../Common/paymentServerLib.h"
 
-
+#define PAY_SERVER_ERROR			  4
 #define PAY_ERROR                 -3
 #define PAY_OK                     0
 #define PAY_INVALID_REQUEST_FORMAT 1
@@ -75,6 +75,8 @@ static char * MakeTicket(char *user,char *movie_name);
 static ticket_info_t * GetTicketInfo(char *ticket);
 
 static file_info_t * GetFileInfo(char *name);
+
+static boolean MovieExists(char *movie_name);
 
 
 /************************************************************/
@@ -543,6 +545,11 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	else if( !UserCanAcces(user, passwd) ) {
 		ret = __USER_ACCESS_DENY__;
 	}
+	
+	if( !MovieExists(buy.movie_name) ) {
+		ret = __BUY_MOVIE_INVALID__;	
+	}
+	
 	if( ret == __BUY_MOVIE_OK__ ) {
         
 		if((paymentStatus = PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd)) == PAY_OK ) {
@@ -564,6 +571,9 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
                     break;
                 case PAY_INSUFICIENT_CASH:
                     ret = __BUY_MOVIE_NO_CASH__;
+                    break;
+				case PAY_SERVER_ERROR:
+                    ret = __BUY_MOVIE_SERVER_ERROR__;
                     break;
                 default:
                     ret = __BUY_MOVIE_ERROR__;
@@ -829,9 +839,9 @@ SendPaymentServerLocationRequest( char *name )
 	
 	strcpy(req.name,name);
 	req_size = GetPaymentRequestData( req, &req_data);	
-	socket = prepareUDP(PLS_IP, PLS_PORT);
-	lookup_server.port=(unsigned short)atoi(PLS_PORT);
-	strncpy(lookup_server.dir_inet,PLS_IP,DIR_INET_LEN);
+	socket = prepareUDP(NULL, PORT_SERVER_UDP);
+	lookup_server.port=(unsigned short)atoi(PORT_LOOKUP);
+	strncpy(lookup_server.dir_inet,HOST_LOOKUP,DIR_INET_LEN);
 	
 	sendUDP(socket, req_data, lookup_server);
 
@@ -841,6 +851,7 @@ SendPaymentServerLocationRequest( char *name )
 	
 	fprintf(stderr,"%s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);
 		
+	close(socket);
 	return ack;
 }
 
@@ -852,12 +863,16 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
     char * resp;
     char * req;
     int socket;
-	//payment_server_t location = SendPaymentServerLocationRequest(pay_name);
+	payment_server_t location = SendPaymentServerLocationRequest(pay_name);
     
+	if( strcmp(location.name,"NOT_EXISTS") == 0 ) {
+		return PAY_SERVER_ERROR;
+	}
+		
     strcpy(request.clientServer, pay_name);
     strcpy(request.accountName, pay_user);
     strcpy(request.accountNumber, pay_passwd);
-    request.securityCode = 232;
+    request.securityCode = atoi(location.key);
     request.amount = 100.0;
     
     if( (req = MakePSRequest(request)) == NULL)
@@ -865,7 +880,7 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
         return PAY_ERROR;
     }
     /* Me conecto al payment server */
-    if( (socket=connectTCP("127.0.0.1","7777")) < 0 ){
+    if( (socket=connectTCP(location.host,location.port)) < 0 ){
         return PAY_ERROR;
     }
     
@@ -884,11 +899,13 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
 	printf("_________________________________________\n");
     if(!ParsePSReply(resp, &reply))
     {
+		close(socket);
         return PAY_ERROR;
     }
     
     if(reply.statusCode != TRANSACTION_SUCCESS)
     {
+		close(socket);
         return reply.statusCode;
     }
     
@@ -923,6 +940,15 @@ MakeTicket(char *user,char *movie_name)
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
 	
 	return ticket_string;
+}
+
+static boolean
+MovieExists(char *movie_name)
+{
+	if( GetFileInfo(movie_name) == NULL )
+		return FALSE;
+	else
+		return TRUE;
 }
 
 static file_info_t *

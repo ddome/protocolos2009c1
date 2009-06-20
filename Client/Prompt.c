@@ -430,6 +430,9 @@ static int BuyMovie_Command(scannerADT scanner, void * data)
             case BUY_MOVIE_USER_ERROR:
                 printf("Cuenta invalida\n");
                 break;
+			case BUY_MOVIE_SERVER_ERROR:
+                printf("Payment server inexistente\n");
+                break;
 			default:
 				printf("Se ha producido un error al efectuar la compra\n");
 		}	
@@ -455,7 +458,7 @@ static int ShowCommands(scannerADT scanner, void * data)
 	printf("listmovies gen\n");
 	printf("listusers\n");
 	printf("download ticket\n");
-	printf("buy movie_name pay_server_name pay_server_user pay_server_password\n");
+	printf("buy movie_name pay_server_name pay_server_user pay_server_account_number\n");
 	printf("exit\n");
 	printf("logout\n");
 

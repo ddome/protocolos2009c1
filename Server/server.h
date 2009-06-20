@@ -14,9 +14,11 @@
 
 #define PORT_SERVER   "1048"
 
-#define PLS_IP "127.0.0.1"
+#define PORT_SERVER_UDP "1071"
 
-#define PLS_PORT "1061"
+#define HOST_LOOKUP "127.0.0.1"
+
+#define PORT_LOOKUP "1070"
 
 #define TICKETS_DATA_PATH "tickets_data"
 

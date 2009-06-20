@@ -430,6 +430,9 @@ UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, c
 			break;
         case __BUY_MOVIE_NO_CASH__:
             ret = BUY_MOVIE_NO_CASH;
+			break;
+		case __BUY_MOVIE_SERVER_ERROR__:
+            ret = BUY_MOVIE_SERVER_ERROR;
             break;
 		default:
 			ret = BUY_CONNECT_ERROR;
