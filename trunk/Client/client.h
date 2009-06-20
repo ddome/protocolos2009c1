@@ -76,6 +76,8 @@ client_list_movies_by_gen_status ListMoviesByGen(char *gen,movie_t ***movie_list
 
 list_users_status ListUsers(client_t ***users_list_ptr);
 
+list_gens_t ListGens(list_movie_request_t *** gens_ptr);
+
 void UserExit(void);
 
 #endif

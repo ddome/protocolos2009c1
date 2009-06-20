@@ -122,6 +122,8 @@ static u_size GetMoviesListData( movie_t **movies, u_size n_movies, void **data_
 
 static u_size GetUsersListData( client_t **users, u_size n_users, void **data_ptr );
 
+static u_size GetGensListData(char **list,u_size n_gens,void **data_ptr);
+
 
 /************************************************************/
 
@@ -502,7 +504,7 @@ ListMoviesByGen(list_movie_request_t gen, int socket)
 status
 ListGens(int socket)
 {
-	list_movie_request_t **list;
+	char **list;
 	header_t header;
 	int ret_code;
 	void *list_data;
@@ -513,14 +515,22 @@ ListGens(int socket)
 	
 	ret_code = __LIST_OK__;
 	
-	/*if( (gens_count=GetGensList(ld,&list)) < 0  ) {
-	 ret_code = __LIST_ERROR__;
+	if( (list=ListGenre(db)) == NULL  ) {
+		ret_code = __LIST_ERROR__;
+	}
+	else {
+
+		/* Cuento la cantidad de generos */
+		int i=0;
+		while( list[i++] != NULL );
+		gens_count = i-1;
+		
+		printf("Cantidad de generossss%d\n",gens_count);
+		
+		if( gens_count > 0 )			 
+			list_size = GetGensListData(list,gens_count,&list_data);
+		ret_code = __LIST_OK__;
 	 }
-	 else {
-	 if( gens_count > 0 )
-	 list_size = GetUsersListData(list,gens_count,&list_data);
-	 ret_code = __LIST_OK__;
-	 }*/
 	
 	header.total_objects = gens_count;
 	header.opCode		 = ret_code;
@@ -528,7 +538,7 @@ ListGens(int socket)
 	
 	sendTCP(socket,header_data,header_size);
 	
-	if( ret_code == __LIST_USERS_OK__ )
+	if( ret_code == __LIST_OK__ )
 		sendTCP(socket,list_data,list_size);
 	
 	return OK;
@@ -1269,6 +1279,30 @@ GetUsersListData( client_t **users, u_size n_users, void **data_ptr )
 	
 	*data_ptr = data;
 	return pos;		
+}
+
+static u_size
+GetGensListData(char **list,u_size n_gens,void **data_ptr)
+{
+	void *data;
+	u_size size;
+	u_size pos;
+	
+	size = MAX_MOVIE_GEN;
+	data = malloc(size * n_gens);
+	
+	pos = 0;
+	int i;
+	printf("cantidad de generos %d\n",n_gens);
+	for(i=0;i<n_gens;i++){
+		memmove(data+pos, list[i], MAX_MOVIE_GEN);
+		pos+=MAX_MOVIE_GEN;
+		printf("%d genero: %s\n",i,list[i]);
+	}
+	
+	*data_ptr = data;
+	return pos;		
+	
 }
 
 static u_size

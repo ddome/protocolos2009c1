@@ -191,7 +191,6 @@ static int ListMoviesByGen_Command(scannerADT scanner, void * data)
 static int ListGens_Command(scannerADT scanner, void * data)
 {
     int retValue = _COMMAND_OK_;
-    char * aux1;
 	list_movie_request_t **gens_list;
 	int i=0;
 	
@@ -208,7 +207,7 @@ static int ListGens_Command(scannerADT scanner, void * data)
 					free(gens_list[i]);					
 					i++;
 				}
-				
+				printf("------------------------------------------------\n\n");
 				free(gens_list);
 				
 				break;
@@ -218,8 +217,6 @@ static int ListGens_Command(scannerADT scanner, void * data)
 			default:
 				printf("Se ha producido un error al intentar conectarse al servidor\n");
 		}
-		
-		free(aux1);
     }
     else {
 		retValue=_COMMAND_NOT_VALID_;
@@ -457,6 +454,7 @@ static int ShowCommands(scannerADT scanner, void * data)
 	printf("password newpassword rep_newpassword\n");
 	printf("listmovies gen\n");
 	printf("listusers\n");
+	printf("listgens\n");
 	printf("download ticket\n");
 	printf("buy movie_name pay_server_name pay_server_user pay_server_account_number\n");
 	printf("exit\n");
@@ -477,6 +475,7 @@ static void LoadTree(treeADT tree)
 	InsertExpression(tree, "download",  Download_Command);
 	InsertExpression(tree, "listmovies",  ListMoviesByGen_Command);
 	InsertExpression(tree, "listusers",  ListUsers_Command);
+	InsertExpression(tree, "listgens",  ListGens_Command);
 	InsertExpression(tree, "logout",  Logout_Command);
     InsertExpression(tree, "help",   ShowCommands);
 	InsertExpression(tree, "exit",   Exit_Command);
