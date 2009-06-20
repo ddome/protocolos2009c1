@@ -221,12 +221,10 @@ NewDownload(int ssock)
 	unsigned long n_packet;
 	boolean exit;
 	download_t header;
-
 	void *packet;
 
 	u_size header_size;
 	FILE *fd;
-		
 	/* Recibo el primer paquete */
 	n_packet = 0;
 	exit = FALSE;
@@ -400,6 +398,7 @@ UserBuyMovie(char *movie_name,char *pay_name,char *pay_user, char *pay_passwd, c
 	encripted=Cypher((char *)buy_data,buy_size,log_passwd);
 	/* Mando el pedido */
 	ticket = SendBuyRequest( encripted, buy_size+(CYPHER_SIZE-buy_size%CYPHER_SIZE));
+	free(encripted);
 	/* Proceso la respuesta */
 	switch (ticket.ret_code) {
 		case __BUY_MOVIE_OK__:
@@ -721,9 +720,11 @@ SendListUsersRequest(client_t ***out_ptr)
 	header_t header;
 	header_t ack_header;
 	void *ack_users;
+	void * ackHeader;
 	int socket;
 	void *header_data;
 	u_size header_size;
+	char * decripted;
 	
 	/* Tipo de pedido */
 	header.opCode = __LIST_USERS__;
@@ -738,17 +739,31 @@ SendListUsersRequest(client_t ***out_ptr)
 		free(header_data);
 		return -1;
 	}
+	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, header_data,header_size);
 	free(header_data);
 	
 	/* Espero por la respuesta del servidor */
-	GetHeaderPack(receiveTCP(socket),&ack_header);
+	ackHeader=receiveTCP(socket);
+	if(ackHeader==NULL)
+	{
+	    close(socket);
+	    return -1;
+	}
+	GetHeaderPack(ackHeader,&ack_header);
 	
 	if( ack_header.opCode == __LIST_USERS_OK__ ) {
 		
 		ack_users = receiveTCP(socket);
-		*out_ptr = GetUsersList(ack_users,ack_header.total_objects);
+		if(ack_users==NULL)
+		{
+		    close(socket);
+		    return -1;
+		}
+		decripted=Decypher(ack_users,ack_header.total_objects*(MAX_USER_LEN+MAX_USER_MAIL+MAX_USER_DESC+sizeof(unsigned char)),log_passwd);
+		*out_ptr = GetUsersList(decripted,ack_header.total_objects);
+		free(decripted);
 		free(ack_users);
 	}
 	else {
@@ -816,7 +831,7 @@ SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr)
 	    return TIMEOUT_ERROR;
 	}
 	GetHeaderPack(ackHeader,&ack_header);
-	
+	fflush(stdout);
 	if( ack_header.opCode == __LIST_OK__ ) {
 		ack_movies = receiveTCP(socket);
 		if(ack_movies==NULL)
@@ -924,6 +939,7 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 		free(to_send);
 		return CONNECT_ERROR;
 	}
+	sleep(50);
 	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, to_send,header_size+size);
@@ -1046,7 +1062,7 @@ SendBuyRequest(void *packet, u_size size)
 	    close(socket);
 	    return download_info;
 	}
-	
+
 	/* Espero por la respuesta del servidor */
 	ack_data = receiveTCP(socket);
 	if(ack_data==NULL)
@@ -1101,7 +1117,7 @@ SendSignal(u_size op_code, void *packet, u_size size)
 	close(socket);
 	return OK;	
 }
-/*DEPRECATD*/
+/*DEPRECATED*/
 static status
 ListenMovie(FILE *fd,char *port,char *ticket)
 {
