@@ -8,7 +8,8 @@
 
 #include "../Common/defines.h"
 #include "../Common/app.h"
-
+#include <signal.h>
+#include <sys/types.h>
 
 #define HOST_SERVER "127.0.0.1"
 
@@ -25,6 +26,8 @@
 #define TICKETS_FREE_PATH "tickets_free"
 
 #define FILES_DATA_PATH "movies_location.txt"
+
+#define DEFAULT_TIMEOUT 10
 
 /*************************************************************************/
 /*		            Manejo del servidor                          */

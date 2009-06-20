@@ -120,3 +120,12 @@ CloseUDP(int socketFD)
 	close(socketFD);
 	return;
 }
+
+void
+setSocketTimeoutUDP(int socket,int seconds)
+{
+    struct timeval tv;
+    tv.tv_sec = seconds;
+    tv.tv_usec = 0;
+    setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv));
+}

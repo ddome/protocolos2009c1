@@ -23,7 +23,7 @@
 #define HOST_CLIENT  "127.0.0.1"
 #define HOST_SERVER  "127.0.0.1"
 
-#define PORT_CLIENT "1051"
+#define PORT_CLIENT "1052"
 #define PORT_SERVER "1048"
 
 #define TIMEOUT_DEFAULT 10

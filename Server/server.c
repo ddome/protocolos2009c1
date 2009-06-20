@@ -55,6 +55,7 @@ dbADT db;
 /* Informacion de los tickets generados */
 COUNTER tickets_counter;
 
+static int exitPipe=0;
 
 /************************************************************/
 /*                    Static functions                      */
@@ -124,12 +125,20 @@ static u_size GetUsersListData( client_t **users, u_size n_users, void **data_pt
 
 /************************************************************/
 
+void
+sigpipeHandler(int signum)
+{
+	printf("Saliendo en sigpipeHandler procepso principal\n");
+	exitPipe=1;
+	return;
+}
+
 
 status 
 InitServer(void)
 {
 	int ret;
-	
+	signal(SIGPIPE,sigpipeHandler);
 	/* Iniciar el servidor ldap */
 	if( (ld=InitLdap()) == NULL ) {
 		return FATAL_ERROR;
@@ -176,7 +185,6 @@ StartServer(void)
 	fd_set rfds;
 	fd_set afds;	
 	int fd, nfds;
-	
 	nfds = getdtablesize();
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
@@ -204,7 +212,6 @@ StartServer(void)
 		/* Atiendo cada pedido */
 		for(fd=0; fd<nfds; ++fd) {
 			if (fd != passive_s && FD_ISSET(fd, &rfds)) {
-								
 				data=receiveTCP(fd);
 				/* Proceso el paquete */
 				if( Session(data,fd) != FATAL_ERROR ) {
@@ -286,6 +293,7 @@ Session(void *data,int socket)
 			fprintf(stderr,"Llego un pedido de --buymovie-- de user:%s passwd:%s\n",header.user,header.passwd);
 			decripted=Decypher((char *)(data+header_size),MAX_MOVIE_LEN+MAX_SERVER_LEN+MAX_USER_LEN+MAX_USER_PASS,header.passwd);
 			GetBuyMoviePack(decripted,&buy);
+			free(decripted);
 			return UserBuyMovie(buy,socket,header.user,header.passwd);
 			break;	
 		case __DOWNLOAD__:
@@ -354,7 +362,7 @@ UserLogin(login_t log,int socket)
 	/* Mando al respuesta */
 	to_ack.ret_code = ret;
 	sendTCP(socket, &to_ack, sizeof(ack_t));
-	
+	exitPipe=0;
 	return OK;
 }
 
@@ -404,7 +412,7 @@ UserNewPasswd(login_t log,int socket, char *user,char *passwd)
 	/* Mando la respuesta */
 	ack.ret_code = ret;
 	sendTCP(socket, &ack, sizeof(ack_t));
-		
+	exitPipe=0;
 	return OK;
 }
 
@@ -431,7 +439,7 @@ UserRegister(client_t client,int socket)
 	/* Mando la respuesta */
 	ack.ret_code = ret;
 	sendTCP(socket, &ack, sizeof(ack_t));
-	
+	exitPipe=0;
 	return OK;
 }
 
@@ -459,14 +467,23 @@ ListMoviesByGen(list_movie_request_t gen, int socket)
 	}
 
 	header_size = GetHeaderData(header, &header_data);
-
+	sleep(30);
 	/* Mando el header */
 	sendTCP(socket, header_data, header_size);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    return OK;
+	}
 	if( header.opCode == __LIST_OK__ ) {
 		/* Mando la lista de peliculas */
 		sendTCP(socket, data, data_size);
+		if(exitPipe==1)
+		{
+		    exitPipe=0;
+		    return OK;
+		}
 	}
-	
 	if( header.opCode == __LIST_OK__ ) {
 		FreeMovieList(movies);
 		free(data);
@@ -489,6 +506,7 @@ ListUsers(int socket,char *user, char* passwd)
 	u_size list_size;
 	u_size header_size;
 	int users_count;
+	char * encripted;
 	
 	ret_code = __LIST_USERS_OK__;
 	
@@ -507,7 +525,10 @@ ListUsers(int socket,char *user, char* passwd)
 		}
 		else {
 			if( users_count > 0 )
+			{
 				list_size = GetUsersListData(list,users_count,&list_data);
+				encripted=Cypher(list_data,list_size,passwd);
+			}
 			ret_code = __LIST_USERS_OK__;
 		}
 	}
@@ -517,10 +538,22 @@ ListUsers(int socket,char *user, char* passwd)
 	header_size = GetHeaderData(header, &header_data);
 	
 	sendTCP(socket,header_data,header_size);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    return OK;
+	}
 	
 	if( ret_code == __LIST_USERS_OK__ )
-		sendTCP(socket,list_data,list_size);
-	
+	{
+	    sendTCP(socket,encripted,list_size);
+	    if(exitPipe==1)
+	    {
+		exitPipe=0;
+		return OK;
+	    }
+	}
+	free(encripted);
 	return OK;
 }
 
@@ -572,7 +605,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
                 case PAY_INSUFICIENT_CASH:
                     ret = __BUY_MOVIE_NO_CASH__;
                     break;
-				case PAY_SERVER_ERROR:
+		case PAY_SERVER_ERROR:
                     ret = __BUY_MOVIE_SERVER_ERROR__;
                     break;
                 default:
@@ -585,9 +618,8 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	/* Mando la respuesta */
 	ack.ret_code = ret;
 	ack_size = GetBuyTicketData(ack,&ack_data);
-	
 	sendTCP(socket, ack_data, ack_size);
-	
+	exitPipe=0;
 	return OK;
 }
 
@@ -635,6 +667,7 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	ack.ret_code = ret;
 	size = GetDownloadHeaderData(ack,&data);
 	sendTCP(socket, &ack, sizeof(download_header_t));
+	exitPipe=0;
 	return OK;
 }
 
@@ -717,7 +750,7 @@ UserLogout(int socket, char *user, char *passwd)
 	/* Mando la respuesta */
 	ack.ret_code = ret;
 	sendTCP(socket, &ack, sizeof(ack_t));   
-	
+	exitPipe=0;
 	return OK;
 }
 
@@ -834,6 +867,7 @@ SendPaymentServerLocationRequest( char *name )
 	u_size req_size;
 	int socket;
 	void *ack_data;
+	int intentos=0;
 	payment_server_t ack;
 	host_t lookup_server;
 	
@@ -842,11 +876,21 @@ SendPaymentServerLocationRequest( char *name )
 	socket = prepareUDP(NULL, PORT_SERVER_UDP);
 	lookup_server.port=(unsigned short)atoi(PORT_LOOKUP);
 	strncpy(lookup_server.dir_inet,HOST_LOOKUP,DIR_INET_LEN);
+	setSocketTimeoutUDP(socket,DEFAULT_TIMEOUT);
 	
-	sendUDP(socket, req_data, lookup_server);
+	do{
+	    sendUDP(socket, req_data, lookup_server);
 
- 	ack_data = receiveUDP(socket, &lookup_server);
-	
+	    ack_data = receiveUDP(socket, &lookup_server);
+	    intentos++;
+	}while(ack_data==NULL && intentos<3);
+	if(ack_data==NULL && intentos==3)
+	{
+	    printf("No me pude conectar");
+	    fflush(stdout);
+	    while(1)
+		;
+	}
 	GetPaymentLocationPack(ack_data,&ack);
 	
 	fprintf(stderr,"%s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);

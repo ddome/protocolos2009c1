@@ -55,4 +55,6 @@ int sendUDP(int socketFD,void * data,host_t dest);
 void * receiveUDP(int socketFD,host_t * sender);
 
 void CloseUDP(int socketFD);
+
+void setSocketTimeoutUDP(int socket,int seconds);
 #endif

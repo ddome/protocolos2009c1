@@ -13,13 +13,15 @@ COMMON_SRC = Common
 DES_SRC = Common/des/source
 
 CLIENT_OBJ = client.o main.o Promt.o scannerADT.o tree.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o
-SERVER_OBJ = server.o main.o hashADT.o client_ldap.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o database_hanlder.o counter.o movieDB.o listADT.o md5.o
-PL_OBJ = main.o lookup.o list.o UDPLib.o
+SERVER_OBJ = server.o main.o hashADT.o client_ldap.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o database_hanlder.o counter.o movieDB.o paymentServerLib.o scannerPS.o listADT.o md5.o
+PL_OBJ = main.o lookup.o list.o UDPLib.o hashADT.o
+PAYMENT = main.o hashADT.o payment.o payment_db.o paymentServerLib.o scannerPS.o
 
 
 CLIENT_NAME = client
 SERVER_NAME = server
 PL_NAME = lookup
+PAYMENT = Payment
 
 all:
 	@-echo ""
@@ -29,6 +31,8 @@ all:
 	$(CC) $(CC_OP) genlib.o $(COMMON_SRC)/genlib.c
 	$(CC) $(CC_OP) TCPLib.o $(COMMON_SRC)/TCPLib.c
 	$(CC) $(CC_OP) UDPLib.o $(COMMON_SRC)/UDPLib.c
+	$(CC) $(CC_OP) paymentServerLib.o $(COMMON_SRC)/paymentServerLib.c
+	$(CC) $(CC_OP) scannerPS.o $(COMMON_SRC)/scannerPS.c
 	$(CC) $(CC_OP) des.o $(DES_SRC)/des.c
 	$(CC) $(CC_OP) bit.o $(DES_SRC)/bit.c
 	
@@ -55,10 +59,18 @@ all:
 	$(LD) $(LD_OP_SERVER) $(LD_OP) $(SERVER_NAME) $(SERVER_OBJ)
 
 	@-echo ""
+	@-echo "Compilando el PaymentServer."
+	$(CC) $(CC_OP) main.o $(PAYMENT)/main.c
+	$(CC) $(CC_OP) hashADT.o $(PAYMENT)/hashADT.c
+	$(CC) $(CC_OP) payment.o $(PAYMENT)/payment.c
+	$(CC) $(CC_OP) payment_db.o $(PAYMENT)/payment_db.c
+
+	@-echo ""
 	@-echo "Compilando el PaymentLookupServer."
 	$(CC) $(CC_OP) main.o $(PL_SERVER)/main.c
 	$(CC) $(CC_OP) lookup.o $(PL_SERVER)/lookup.c
 	$(CC) $(CC_OP) list.o $(PL_SERVER)/list.c
+	$(CC) $(CC_OP) hashADT.o $(PL_SERVER)/hashADT.c
 	$(LD) $(LD_OP) $(PL_NAME) $(PL_OBJ)
 	-make clean
 	
