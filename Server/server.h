@@ -64,6 +64,8 @@ status ListMoviesByGen(list_movie_request_t gen, int socket);
 
 status ListUsers(int socket,char *user, char* passwd);
 
+status ListGens(int socket);
+
 /*************************************************************************/
 
 int UsersComp( void *c1, void *c2 );
