@@ -72,61 +72,6 @@ InitPaymentServer(void)
 *  Lanza la atencion de pedidos del paymentServer. Para el uso de esta funcion
 *  el usuario ya tiene que haber invocado a la funcion InitPaymentServer().
 */
-static void
-MandarPaquetes1(void)
-{
-
-requestPS_t r;
-strcpy(r.clientServer, "servidor");
-strcpy(r.accountName, "Charlie Brown");
-strcpy(r.accountNumber,"5551231231231237");
-r.securityCode = 234;
-r.amount= 100.0;
-Session((void *)MakePSRequest(r),0);
-
-}
-
-static void
-MandarPaquetes4(void)
-{
-
-requestPS_t r;
-strcpy(r.clientServer, "servidor");
-strcpy(r.accountName, "Charlie Brown");
-strcpy(r.accountNumber,"5551231231231237");
-r.securityCode = 234;
-r.amount= 80.0;
-Session((void *)MakePSRequest(r),0);
-
-}
-
-static void
-MandarPaquetes2(void)
-{
-
-requestPS_t r;
-strcpy(r.clientServer, "servidor");
-strcpy(r.accountName, "Charlie Brown");
-strcpy(r.accountNumber,"5551231231231237");
-r.securityCode = 234;
-r.amount= 600.0;
-Session((void *)MakePSRequest(r),0);
-
-}
-
-static void
-MandarPaquetes3(void)
-{
-
-requestPS_t r;
-strcpy(r.clientServer, "servidor");
-strcpy(r.accountName, "sdfa");
-strcpy(r.accountNumber,"5551231231231237");
-r.securityCode = 234;
-r.amount= 600.0;
-Session((void *)MakePSRequest(r),0);
-
-}
 
 
 status 
@@ -175,7 +120,6 @@ StartPaymentServer(void)
 				if( Session(data,fd) != FATAL_ERROR ) {
 					close(fd); // Tengo que cerrar la conexion?
 					FD_CLR(fd, &afds);
-					free(data);
 				}
 				else {
 					return FATAL_ERROR;

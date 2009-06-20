@@ -15,38 +15,95 @@
 #include <errno.h>
 
 #include "list.h"
+#include "hashADT.h"
 #include "../Common/app.h"
 #include "../Common/genlib.h"
 #include "../Common/des/include/encrypt.h"
 #include "lookup.h"
 
 /* Lista con los servers disponibles */
-LIST payment_servers;
+hashADT payment_servers;
 
 static payment_server_t * GetServer(char *server_name);
 
 /* GetData(pack) */
 u_size GetAckData(payment_server_t pack,void **data_ptr);
 
+int
+ServersComp( void * v1, void *v2 )
+{
+	payment_server_t *t1,*t2;
+	
+	t1 = v1;
+	t2 = v2;
+	
+	return strcmp(t1->name, t2->name);
+}
+
+int
+ServerHash( void *v, int size )
+{
+	int i;
+	payment_server_t *t = v;
+	int num = 0;
+	
+	i=0;
+	while (t->name[i] != '\0' ) {
+		num += (t->name)[i];
+		i++;
+	}	
+	return  num % size;
+}
+
+int
+ServerSave(FILE *fd,void *data)
+{	
+	payment_server_t *f =data;
+	fprintf(fd,"%s;%s;%s;%s\n",f->name,f->host,f->port,f->key);
+	
+	return 0;
+}
+
+void *
+ServerLoad(FILE *fd)
+{	
+	payment_server_t *f = malloc(sizeof(payment_server_t));
+	char line[500];
+	char *token;
+	
+	if( fgets(line,500,fd) == NULL )
+		return NULL;
+	
+	token = strtok (line,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->name,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->host,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->port,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->key,token);
+	
+	return (void*)f;
+}
+
+
+
 status 
 InitLookup(void)
 {
-	LIST aux;
-	payment_server_t aux2;
+	payment_servers = LoadHashTable(LOCATION, sizeof(payment_server_t), ServersComp, ServerHash, ServerSave, ServerLoad);
 	
-	aux = list_new(MAX_SERVER_LEN, sizeof(payment_server_t));
-	
-	strcpy(aux2.name,"master");
-	strcpy(aux2.host, "127.0.0.1");
-	strcpy(aux2.port, "1070");
-	strcpy(aux2.key, "clave");
-	
-	list_add(aux, "master", &aux2);	
-	list_save(aux, "serverlist");
-	
-	list_free(aux);
-	
-	payment_servers = list_load("serverlist", MAX_SERVER_LEN, sizeof(payment_server_t));
 	return OK;
 }	
 
@@ -56,7 +113,7 @@ StartLookup(void)
 	int socket;
 	void *data;
 	host_t dest;
-	socket = prepareUDP("127.0.0.1", "1060");
+	socket = prepareUDP("127.0.0.1", "1070");
 	
 	while(1) {
 		data = receiveUDP(socket,&dest);
@@ -90,7 +147,10 @@ Session(void *data,int socket,host_t dest)
 	
 	printf("\n%s\n",req.name);
 	
-	ack = GetServer(req.name);
+	if( (ack = GetServer(req.name)) == NULL ) {
+		ack = malloc(sizeof(payment_server_t));
+		strcpy(ack->name,"NOT_EXISTS");
+	}
 	
 	fprintf(stderr,"%s %s %s %s\n",ack->name,ack->host,ack->port,ack->key);
 	
@@ -99,6 +159,7 @@ Session(void *data,int socket,host_t dest)
 	fprintf(stderr,"%ld\n",ack_size);
 	
 	sendUDP(socket,ack_data,dest);
+	
 	return OK;
 }
 
@@ -112,16 +173,23 @@ NewServer(payment_server_t server)
 	if( (aux=malloc(sizeof(payment_server_t))) == NULL )
 		return ERROR;
 	*aux = server;
-	if( list_add(payment_servers, aux->name, aux) == 1 )
-		return OK;
+	if( HInsert(payment_servers, aux) == -1 )
+		return ERROR;
 	else
-		return ERROR;	
+		return OK;	
 }
 
 static payment_server_t *
 GetServer(char *server_name)
 {
-	return list_get(payment_servers, server_name);
+	payment_server_t aux;
+	int pos;
+	
+	strcpy(aux.name, server_name);
+	if( (pos=Lookup(payment_servers, &aux)) == -1 )
+		return NULL;
+		
+	return GetHElement(payment_servers, pos);
 }
 
 /* GetData(pack) */
