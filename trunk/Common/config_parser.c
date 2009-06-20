@@ -200,6 +200,7 @@ IsNumber(char c)
 /* Funcion:ReadLine()
 *  -------------------
 *  Toma una linea a partir del cursor actual del archivo inputFile.
+*  Las lineas comenzadas con '#' se toman como comentarios.
 */
 static char *
 ReadLine( FILE * inputFile )
@@ -212,8 +213,14 @@ ReadLine( FILE * inputFile )
 		return NULL;
     if( ((len = strlen( line )) == 0) || ((len = strlen( line )) == 1 ) )
         return NULL;
+	
+	if( line[0] == '#' ) {
+		return ReadLine(inputFile);
+	}
+	
     line[len-1] = '\0';
     line[len] = '\0';
+	
 	
     resp = malloc( (len + 1) * sizeof(char) );
     strncpy(resp, line, len + 1);
