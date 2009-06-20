@@ -25,7 +25,7 @@
 #include "../Common/TCPLib.h"
 //#include "../Common/des/include/encrypt.h"
 //#include "../Common/fileHandler.h"
-#include "paymentServerLib.h"
+#include "../Common/paymentServerLib.h"
 #include "payment_db.h"
 #include "hashADT.h"
 

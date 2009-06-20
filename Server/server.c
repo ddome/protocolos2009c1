@@ -25,6 +25,7 @@
 #include "../Common/fileHandler.h"
 #include "movieDB.h"
 #include "database_handler.h"
+#include "../Common/paymentServerLib.h"
 
 
 #define PAY_ERROR                 -3
@@ -877,17 +878,10 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
         close(socket);
         return PAY_ERROR;
     }
-    /******************************/
-    typedef union{
-        int transaction;
-        char reason[MAXREASON + 1];
-    } reply_t;
 
-    typedef struct{
-        StatusCode statusCode;
-        reply_t reply;
-    } replyPS_t;
-    /********************************/
+	printf("_________________________________________\n");
+	printf("%s\n",resp);
+	printf("_________________________________________\n");
     if(!ParsePSReply(resp, &reply))
     {
         return PAY_ERROR;

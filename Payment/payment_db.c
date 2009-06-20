@@ -49,17 +49,17 @@ psLoad(FILE *fd)
 		return NULL;
 
 	token = strtok (line,";");
-    if( token == NULL || strlen(token) > MAXNAME)
+    if( token == NULL )//|| strlen(token) > MAXNAME)
 		return NULL;
 	strcpy(c->accountName,token);
 
 	token = strtok (NULL,";");
-    if( token == NULL || strlen(token) > MAXACCOUNTNUM)
+    if( token == NULL )//|| strlen(token) > MAXACCOUNTNUM)
 		return NULL;
 	strcpy(c->accountNumber,token);
 
 	token = strtok (NULL,";");
-	if( token == NULL || strlen(token) > 6)
+	if( token == NULL)// || strlen(token) > 6)
 		return NULL;
 	c->securityCode = atoi(token);
 
