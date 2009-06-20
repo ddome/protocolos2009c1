@@ -71,19 +71,19 @@
 #define __BUY_MOVIE_PASS_ERROR__  23L
 #define __BUY_MOVIE_ERROR__		 24L
 #define __BUY_MOVIE_INVALID__	 25L
-#define __BUY_MOVIE_NO_CASH__    26L
-#define __BUY_MOVIE_SERVER_ERROR__ 40L
+#define __BUY_MOVIE_NO_CASH__     26L
+#define __BUY_MOVIE_SERVER_ERROR__ 27L
 
 /* Codigos para consultar peliculas */
-#define __LIST_MOVIES_BY_GEN__	 27L
-#define __LIST_GENS__			 28L
-#define __LIST_OK__				 29L
-#define __LIST_ERROR__			 30L
+#define __LIST_MOVIES_BY_GEN__	 28L
+#define __LIST_GENS__			 29L
+#define __LIST_OK__				 30L
+#define __LIST_ERROR__			 31L
 
 /* Codigos para consultar usuarios */
-#define __LIST_USERS__			 31L
-#define __LIST_USERS_OK__	     32L
-#define __LIST_USERS_ERROR__     33L
+#define __LIST_USERS__			 32L
+#define __LIST_USERS_OK__	     33L
+#define __LIST_USERS_ERROR__      34L
  
 /* Estructuras del protocolo de aplicacion */
 
@@ -117,7 +117,7 @@ typedef struct {
 	char plot[MAX_MOVIE_PLOT];
 	u_size duration; /* En minutos */
 	u_size size;     /* En bytes   */ 
-	u_size value;
+	float value;
 	char MD5[M_SIZE];
 } movie_t;
 

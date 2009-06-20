@@ -71,6 +71,8 @@ static u_size GetHeaderPack(void *data, header_t *header);
 
 static client_t ** GetUsersList(void *data, u_size number);
 
+static list_movie_request_t ** GetGenList(void *data,u_size number);
+
 /*PID del proceso que escucha nuecas descargas*/
 static pid_t downloader_pid;
 /*Socket destinado a las descaragas*/
@@ -701,7 +703,7 @@ SendListGensRequest(list_movie_request_t ***out_ptr)
 	if( ack_header.opCode == __LIST_OK__ ) {
 		
 		ack_gens = receiveTCP(socket);
-		//*out_ptr = GetGenList(ack_gens,ack_header.total_objects);
+		*out_ptr = GetGenList(ack_gens,ack_header.total_objects);
 		free(ack_gens);
 	}
 	else {
@@ -871,7 +873,7 @@ GetMovies(void *data, u_size number)
 		pos+=sizeof(u_size);
 		memmove(&(list[i]->size), data+pos, sizeof(u_size));
 		pos+=sizeof(u_size);
-		memmove(&(list[i]->value), data+pos, sizeof(u_size));
+		memmove(&(list[i]->value), data+pos, sizeof(float));
 		pos+=sizeof(u_size);
 		memmove(list[i]->MD5, data+pos, M_SIZE);
 		pos+=M_SIZE;		
@@ -905,6 +907,26 @@ GetUsersList(void *data, u_size number)
 	
 	list[i] = NULL;
 	return list;	
+}
+
+static list_movie_request_t **
+GetGenList(void *data,u_size number)
+{
+	int i;
+	list_movie_request_t **list = malloc(sizeof(list_movie_request_t*)*(number+1));
+	
+	u_size pos = 0;
+	for(i=0;i<number;i++){
+		
+		list[i] = malloc(sizeof(list_movie_request_t));
+		
+		memmove(list[i]->gen, data+pos, MAX_MOVIE_GEN);
+		pos+=MAX_MOVIE_GEN;
+		
+	}
+	
+	list[i] = NULL;
+	return list;		
 }
 
 static unsigned long 

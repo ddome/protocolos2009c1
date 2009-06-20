@@ -69,7 +69,7 @@ static status SendMovie(char *path,char *ip,char *port);
 
 static payment_server_t SendPaymentServerLocationRequest( char *name );
 
-static int PayMovie(char *pay_name,char *pay_user,char *pay_passwd);
+static int PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount);
 
 static char * MakeTicket(char *user,char *movie_name);
 
@@ -77,7 +77,7 @@ static ticket_info_t * GetTicketInfo(char *ticket);
 
 static file_info_t * GetFileInfo(char *name);
 
-static boolean MovieExists(char *movie_name);
+static float MovieValue(char *movie_name);
 
 
 /************************************************************/
@@ -157,13 +157,13 @@ InitServer(void)
 	/* Iniciacion de tablas de datos */
 	
 	/* Usuarios online */
-	users_online = NewHash(150, UsersComp, UsersHash,NULL,NULL);	
+	users_online = NewHash(sizeof(client_t), UsersComp, UsersHash,NULL,NULL);	
 	
 	/* Tickets generados asociados a una descarga */
 	tickets_generated = LoadHashTable(TICKETS_DATA_PATH, sizeof(ticket_info_t), TicketInfoComp, TicketHash, TicketSave, TicketLoad);
 	
 	/* Ubicacion de las peliculas dentro del file system */
-	file_paths = NewHash(150, FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
+	file_paths = NewHash(sizeof(file_info_t), FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
 
 	/* Lista de peliculas */
 	db = NewDB();
@@ -287,6 +287,11 @@ Session(void *data,int socket)
 			/* Comprar pelicula */
 			fprintf(stderr,"Llego un pedido de --listarusuarios-- de user:%s passwd:%s\n",header.user,header.passwd);
 			return ListUsers(socket,header.user,header.passwd);
+			break;
+		case __LIST_GENS__:
+			/* Comprar pelicula */
+			fprintf(stderr,"Llego un pedido de --listargeneros-- de user:%s passwd:%s\n",header.user,header.passwd);
+			return ListGens(socket);
 			break;
 		case __BUY_MOVIE__:
 			/* Comprar pelicula */
@@ -492,6 +497,44 @@ ListMoviesByGen(list_movie_request_t gen, int socket)
 	return OK;
 }
 
+/* case __LIST_GENS__ */
+
+status
+ListGens(int socket)
+{
+	list_movie_request_t **list;
+	header_t header;
+	int ret_code;
+	void *list_data;
+	void *header_data;
+	u_size list_size;
+	u_size header_size;
+	int gens_count;
+	
+	ret_code = __LIST_OK__;
+	
+	/*if( (gens_count=GetGensList(ld,&list)) < 0  ) {
+	 ret_code = __LIST_ERROR__;
+	 }
+	 else {
+	 if( gens_count > 0 )
+	 list_size = GetUsersListData(list,gens_count,&list_data);
+	 ret_code = __LIST_OK__;
+	 }*/
+	
+	header.total_objects = gens_count;
+	header.opCode		 = ret_code;
+	header_size = GetHeaderData(header, &header_data);
+	
+	sendTCP(socket,header_data,header_size);
+	
+	if( ret_code == __LIST_USERS_OK__ )
+		sendTCP(socket,list_data,list_size);
+	
+	return OK;
+}
+
+
 /* case __LIST_USERS__ */
 
 status
@@ -568,6 +611,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	u_size ack_size;
 	char *aux_ticket;
     int paymentStatus;
+	int value;
 	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
@@ -578,13 +622,13 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 		ret = __USER_ACCESS_DENY__;
 	}
 	
-	if( !MovieExists(buy.movie_name) ) {
+	if( (value=MovieValue(buy.movie_name)) < 0 ) {
 		ret = __BUY_MOVIE_INVALID__;	
 	}
 	
 	if( ret == __BUY_MOVIE_OK__ ) {
         
-		if((paymentStatus = PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd)) == PAY_OK ) {
+		if((paymentStatus = PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd,value)) == PAY_OK ) {
 			if( (aux_ticket=MakeTicket(user,buy.movie_name)) == NULL )
 				ret = __BUY_MOVIE_INVALID__;	
 			else {
@@ -899,7 +943,7 @@ SendPaymentServerLocationRequest( char *name )
 }
 
 static int
-PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
+PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
 {
     requestPS_t request;
     replyPS_t reply;
@@ -916,7 +960,7 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd)
     strcpy(request.accountName, pay_user);
     strcpy(request.accountNumber, pay_passwd);
     request.securityCode = atoi(location.key);
-    request.amount = 100.0;
+    request.amount = ammount;
     
     if( (req = MakePSRequest(request)) == NULL)
     {
@@ -985,13 +1029,16 @@ MakeTicket(char *user,char *movie_name)
 	return ticket_string;
 }
 
-static boolean
-MovieExists(char *movie_name)
+static float
+MovieValue(char *movie_name)
 {
-	if( GetFileInfo(movie_name) == NULL )
-		return FALSE;
-	else
-		return TRUE;
+	file_info_t *aux;
+	if( (aux=GetFileInfo(movie_name)) == NULL )
+		return -1;
+	else {
+		printf("valor de la peli: %f\n",aux->value);
+		return aux->value;
+	}
 }
 
 static file_info_t *
@@ -1247,8 +1294,8 @@ GetMoviesListData( movie_t **movies, u_size n_movies, void **data_ptr )
 		pos+=sizeof(unsigned long);
 		memmove(data+pos, &(movies[i]->size), sizeof(unsigned long));
 		pos+=sizeof(unsigned long);
-		memmove(data+pos, &(movies[i]->value), sizeof(unsigned long));
-		pos+=sizeof(unsigned long);
+		memmove(data+pos, &(movies[i]->value), sizeof(float));
+		pos+=sizeof(float);
 		memmove(data+pos, movies[i]->MD5, M_SIZE);
 		pos+=M_SIZE;
 	}
