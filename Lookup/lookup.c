@@ -117,7 +117,6 @@ StartLookup(void)
 	
 	while(1) {
 		data = receiveUDP(socket,&dest);
-		sleep(500);
 		fprintf(stderr, "LLEGOOOO");
 		if( Session(data,socket,dest) == FATAL_ERROR )
 			exit(EXIT_FAILURE);	
