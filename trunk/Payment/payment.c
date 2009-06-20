@@ -41,10 +41,28 @@ status
 InitPaymentServer(void)
 {
 	int ret;
-		
+    char ip[MAXIP];
+    char port[MAXPORT];
+    FILE * config;
+    address_array_t address;
+    /* Abrir archivo de configuracion
+    */
+    if((config = fopen(PAYMENT_CONFIG, "r+")) == NULL)
+    {
+        fprintf(stderr, "No se pudo abrir el archivo de configuracion.\n");
+        return FATAL_ERROR;
+    }
+    /* Obtener ip y puerto del archivo de configuracion
+    */
+    if(!GetAddresses(config, &address) || address.count != 1)
+    {
+        fprintf(stderr, "Archivo de configuracion invalido o corrupto\n");
+    }
+    
 	/* Iniciar TCP 
-        */
-	if( (passive_s=prepareTCP(HOST_PAYMENT, PORT_PAYMENT, prepareServer)) < 0 ) {
+    */
+	if( (passive_s=prepareTCP(address.addresses[0].ip, 
+                     address.addresses[0].port, prepareServer)) < 0 ) {
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",passive_s);
 		return FATAL_ERROR;
 	}	
@@ -87,10 +105,6 @@ StartPaymentServer(void)
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
     InitMessage();
-	//MandarPaquetes1();
-	//MandarPaquetes2();
-	//MandarPaquetes3();
-	//MandarPaquetes4();
 	while(1) {
 		
 		memcpy(&rfds, &afds, sizeof(rfds));

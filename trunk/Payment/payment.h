@@ -26,12 +26,13 @@
 //#include "../Common/des/include/encrypt.h"
 //#include "../Common/fileHandler.h"
 #include "../Common/paymentServerLib.h"
+#include "../Common/config_parser.h"
 #include "payment_db.h"
 #include "hashADT.h"
 
 /* Defines
 */
-
+#define PAYMENT_CONFIG "./config.ini"
 #define PAYMENT_DB "./payment.csv"
 #define HOST_PAYMENT "127.0.0.1"
 #define PORT_PAYMENT "1600"
