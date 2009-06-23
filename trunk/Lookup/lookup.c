@@ -107,8 +107,6 @@ ServerLoad(FILE *fd)
 		return NULL;
 	}
 	
-	printf("--%ld--\n",f->TTL);
-	
 	return (void*)f;
 }
 

@@ -11,23 +11,22 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <syslog.h>
+#include <time.h>
 
+/* Configuracion de direcciones utilizadas */
 #define SERVER_CONFIG "server.config"
-
+/* Informacion de las peliculas compradas */
 #define TICKETS_DATA_PATH "tickets_data"
-
+/* Contador de tickets libres */
 #define TICKETS_FREE_PATH "tickets_free"
-
+/* Informacion de los archivos descargables */
 #define FILES_DATA_PATH "movies_location.txt"
-
+/* Tiempo default para abortar una espera */
 #define DEFAULT_TIMEOUT 10
-
-
 
 /*************************************************************************/
 /*		            Manejo del servidor                          */
 /*************************************************************************/
-
 
 status InitServer(void);
 
