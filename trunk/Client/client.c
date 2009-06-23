@@ -695,6 +695,7 @@ SendListGensRequest(list_movie_request_t ***out_ptr)
 	header_t header;
 	header_t ack_header;
 	void *ack_gens;
+	void * dataAux;
 	int socket;
 	void *header_data;
 	u_size header_size;
@@ -712,16 +713,34 @@ SendListGensRequest(list_movie_request_t ***out_ptr)
 		free(header_data);
 		return -1;
 	}
+	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, header_data,header_size);
 	free(header_data);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    close(socket);
+	    return -1;
+	}
 	
 	/* Espero por la respuesta del servidor */
-	GetHeaderPack(receiveTCP(socket),&ack_header);
+	dataAux=receiveTCP(socket);
+	if(dataAux==NULL)
+	{
+	    close(socket);
+	    return -1;
+	}
+	GetHeaderPack(dataAux,&ack_header);
 	
 	if( ack_header.opCode == __LIST_OK__ ) {
 		
 		ack_gens = receiveTCP(socket);
+		if(ack_gens==NULL)
+		{
+		    close(socket);
+		    return -1;
+		}
 		*out_ptr = GetGenList(ack_gens,ack_header.total_objects);
 		free(ack_gens);
 	}
@@ -764,6 +783,12 @@ SendListUsersRequest(client_t ***out_ptr)
 	/* Mando el paquete */
 	sendTCP(socket, header_data,header_size);
 	free(header_data);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    close(socket);
+	    return -1;
+	}
 	
 	/* Espero por la respuesta del servidor */
 	ackHeader=receiveTCP(socket);
@@ -1197,6 +1222,11 @@ ListenMovie(FILE *fd,char *port,char *ticket)
 	while (!exit) {
 		/* Recibo un paquete */
 		packet = receiveTCP(ssock);
+		if(packet==NULL)
+		{
+		    close(socket);
+		    return TIMEOUT_ERROR;
+		}
 		header_size = GetDownloadPack(packet,&header);
 		fprintf(stderr,"caca: (%ld) (%ld)\n",header.n_packet,n_packet);
 		/* Lo bajo a disco */
