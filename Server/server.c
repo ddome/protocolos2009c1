@@ -825,9 +825,9 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 			sleep(2); //Cambiar esto porque es muy villero
 			fprintf(stderr,"Empiezoooooo\n");
 			if( SendMovie(file_info->path,start.ip,start.port) != OK )
-			    exit(EXIT_FAILURE);//return OK;
+			    return OK;
 			else
-			    exit(EXIT_SUCCESS);//return OK;
+			    return OK;
 			break;
 		case -1:
 			return ERROR;
