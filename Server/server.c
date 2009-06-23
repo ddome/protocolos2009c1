@@ -154,7 +154,7 @@ InitServer(void)
 	if( (ld=InitLdap()) == NULL ) {
 		return FATAL_ERROR;
 	}
-		
+	
 	/* Iniciar TCP */
 	if( (passive_s=prepareTCP(HOST_SERVER,PORT_SERVER,prepareServer)) < 0 ) {
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",passive_s);
@@ -166,13 +166,13 @@ InitServer(void)
 	}
 	
 	/* Iniciacion de tablas de datos */
-	
+
 	/* Usuarios online */
 	users_online = NewHash(sizeof(client_t), UsersComp, UsersHash,NULL,NULL);	
 	
 	/* Tickets generados asociados a una descarga */
 	tickets_generated = LoadHashTable(TICKETS_DATA_PATH, sizeof(ticket_info_t), TicketInfoComp, TicketHash, TicketSave, TicketLoad);
-	
+
 	/* Ubicacion de las peliculas dentro del file system */
 	file_paths = NewHash(sizeof(file_info_t), FileInfoComp, FileInfoHash, FileInfoSave, FileInfoLoad);
 
@@ -181,10 +181,10 @@ InitServer(void)
 	if(InitDB(db,FILES_DATA_PATH,file_paths)==ERROR) {
 		return FATAL_ERROR;
 	}
-	
+
 	/* Tickets disponibles */
 	tickets_counter = LoadCounter(TICKETS_FREE_PATH);
-		
+	openlog("MovieStoreServer",0,LOG_LOCAL0);
 	return OK;
 }
 
@@ -323,6 +323,7 @@ Session(void *data,int socket)
 			/* Descargar pelicula */
 			fprintf(stderr,"Llego un pedido de --startdownload-- de user:%s passwd:%s\n",header.user,header.passwd);
 			GetDownloadStartOK(data+header_size,&start);
+			
 			return UserStartDownload(start,socket,header.user,header.passwd);
 			break;	
 		case __LOG_OUT__:
@@ -630,7 +631,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	u_size ack_size;
 	char *aux_ticket;
     int paymentStatus;
-	int value;
+	float value;
 	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
@@ -644,9 +645,7 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 	if( (value=MovieValue(buy.movie_name)) < 0 ) {
 		ret = __BUY_MOVIE_INVALID__;	
 	}
-	
 	if( ret == __BUY_MOVIE_OK__ ) {
-        
 		if((paymentStatus = PayMovie(buy.pay_name,buy.pay_user,buy.pay_passwd,value)) == PAY_OK ) {
 			if( (aux_ticket=MakeTicket(user,buy.movie_name)) == NULL )
 				ret = __BUY_MOVIE_INVALID__;	
@@ -678,6 +677,11 @@ UserBuyMovie(buy_movie_request_t buy,int socket,char *user,char *passwd)
 		}	
 	}
 	/* Mando la respuesta */
+	if(ret == __BUY_MOVIE_OK__ )
+	    syslog(LOG_INFO,"El usuario %s compro la pelicula %s a travez de %s. El costo fue de %f.",user,buy.movie_name,buy.pay_name,value);
+	else
+	    syslog(LOG_INFO,"El usuario %s intento comprar la pelicula %s a travez de %s pero se produjo un error.",user,buy.movie_name,buy.pay_name,value);
+
 	ack.ret_code = ret;
 	ack_size = GetBuyTicketData(ack,&ack_data);
 	sendTCP(socket, ack_data, ack_size);
@@ -768,7 +772,8 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
 	
 	printf("Le quedan %d bajadas/n",file_info->n_downloads);
-	
+	syslog(LOG_INFO,"El usuario %s inicio la descarga de la pelicula %s. Le quedan %d descargas."
+			,user,GetNameFromPath(file_info->path),(int)file_info->n_downloads);
 	switch( fork() ) {
 		case 0:
 			/* Espero a que se establezca la conexion */

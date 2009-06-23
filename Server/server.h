@@ -10,6 +10,7 @@
 #include "../Common/app.h"
 #include <signal.h>
 #include <sys/types.h>
+#include <syslog.h>
 
 #define HOST_SERVER "127.0.0.1"
 

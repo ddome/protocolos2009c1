@@ -1,0 +1,134 @@
+.TH server 1 "22 de Junio de 2009" "Version 2.0" "Movie Store Server"
+
+
+
+
+
+.SH NAME
+.B "client"
+Inicia el cliente MovieStoreClient para la compra de peliculas online.
+
+
+
+
+
+.SH DESCRIPTION
+client (MovieStoreClient) es el comando que inicia el cliente para conectarse con el MovieStoreClient. Este cliente nos permitira lista las peliculas
+disponibles en el servidor. Dichas peliculas podran ser compradas y descargadas al disco local.
+
+
+
+
+
+.SH COMMANDS
+Los comandos disponibles una vez ejecutado el comando
+.B "client"
+son:
+
+
+.PP
+.B "login <username> <password>"
+.PP
+El comando login nos permite autenticarnos contra el servidor. El comando debe recibir como argumentos el nombre de usuario
+.B <username>
+seguido del password
+.B <password>
+
+
+.PP
+.B "new <username> <password> <password2> <mail> <descripcion> <nivel>"
+.PP
+El comando new permite registrar una nueva cuenta en el servidor. El comando recibe como argumentos el nombre de usuario 
+.B <username>
+que se desea utilizar para loguearse. Se debe introducir el password
+.B <password>
+deseado para loguearse y se debe ingresar dicho password una segunda vez
+.B <password2>
+como verificacion. Se debe incluir la direccion de e-mail
+.B <mail>
+como una breve descripcion
+.B <descripcion>
+El nivel
+.B <nivel>
+indica cual es el nivel que tiene el nuevo usuario.
+
+
+.PP
+.B "password <password> <password2>"
+.PP
+Permite cambiar el password utilizado para loguearse. El comando recibe como argumentos el nuevo password
+.B <password>
+como asi tambien un verificacion del nuevo password ingresado
+.B <password2>
+. Para realizar esta operacion se debe estar previamente logueado.
+
+
+.PP
+.B "listgens"
+.PP
+Permite obtener la lista de generos disponibles.
+
+
+.PP
+.B "listmovies <genero>"
+.PP
+Permite obtener la lista de peliculas pertenecientes a un genero
+.B <genero>
+en particular.
+
+
+.PP
+.B "listusers"
+.PP
+Permite obtener una lista con la informacion de todos los usuarios registrados en el servidor. Para realizar esta operacion se debe estar previamente logueado.
+
+
+.PP
+.B "buy <nombre de la pelicula> <nombre del servicio de pago> <usuario del servicio de pago> <password del servicio de pago>"
+.PP
+Permite realizar la compra de un pelicula por su nombre
+.B <nombre de la pelicula>
+Debe indicarse el servicio de pago a utilizar
+.B <nombre del servicio de pago>
+como tambien el nombre de usuarios
+.B <usuario del servicio de pago>
+y password
+.B <password del servicio de pago>
+para autenticarse contra ese servidor
+
+
+.PP
+.B "download <ticket>"
+.PP
+Inicia la descarga de la pelicula asociada a un ticket
+.B <ticket>
+Dicho ticket debio ser previamente comprado a utilizando el comando
+.B buy
+
+
+.PP
+.B "logout"
+.PP
+El comando logout termina la sesion actual.
+.PP
+.B "exit"
+.PP
+El comando exit nos desloguea terminando la sesion actual y termina la ejecucion del programa.
+
+
+
+
+
+.SH AUTHOR
+Desarrollado por Nicolas Bombau, Carlos Castro y Damian Dome.
+
+
+
+
+
+.SH SEE ALSO
+.B "server"
+,
+.B "payment"
+,
+.B "lookup"
