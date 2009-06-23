@@ -1,0 +1,5 @@
+/Users/damian/DATA/test1.mp3;Batman;accion;muy buena;1400;10
+/Users/damian/DATA/campanita.avi;campanita;terror;muy buena;1400;10
+/Users/damian/DATA/test3;Terror2;terror;muy buena;1400;10
+/Users/damian/DATA/test4;Terror3;terror;muy buena;1400;10
+/Users/damian/DATA/test5;Terror4;terror;muy buena;1400;10

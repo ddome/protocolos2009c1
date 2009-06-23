@@ -175,7 +175,7 @@ IsValidPort(char * token)
 {
 	int i;
 	int len = strlen(token);
-	if(len == 0 || len > 4){
+	if(len == 0 || len > 5){
 		return 0;
 	}
 	for(i = 0; i<len; i++){

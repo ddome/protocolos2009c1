@@ -1049,33 +1049,29 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
 	
     payment_server_t location,*respCache; 
     
-    /* Tendrias que implementar una funcion que busque en hashADT buffer_lookup (es global, ya esta creado)
-	* por un payment_server. SI devuelve NULL es porque no lo encontro o
-	* el tiempo esta vencido y deberias buscarlo en el lookup tal como
-	* puse dentro del if */
     
     if( (respCache=PaymentServerCacheSearch(pay_name))==NULL )
     {
-	printf("Busco uno nuevo!\n");
+		printf("Busco uno nuevo!\n");
 	    location = SendPaymentServerLocationRequest(pay_name);
 	    isNew=1;
     }
     else
     {
-	printf("Ya estaba y tenia TTL valido\n");
-	location=*respCache;
-	free(respCache);
+		printf("Ya estaba y tenia TTL valido\n");
+		location=*respCache;
+		free(respCache);
     }
     if( strcmp(location.name,"NOT_EXISTS") == 0 ) {
 	    return PAY_SERVER_ERROR;
     }
     if( strcmp(location.name,"CONNECTION ERROR") == 0 ) {
-	return PAY_ERROR;
+		return PAY_ERROR;
     }
     if(isNew)
     {
 	location.TTL=time(NULL);
-	HInsert(payment_buffer, &location);
+		HInsert(payment_buffer, &location);
     }
 	    
     strcpy(request.clientServer, pay_name);
