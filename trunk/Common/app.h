@@ -158,6 +158,7 @@ typedef struct {
 	char host[MAX_HOST_LEN];
 	char port[MAX_PORT_LEN];
 	char key[MAX_SERVER_KEY];
+	time_t TTL;
 } payment_server_t;
 
 /* Compra de peliculas */

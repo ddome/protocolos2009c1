@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 #include "list.h"
 #include "hashADT.h"
@@ -63,7 +64,7 @@ int
 ServerSave(FILE *fd,void *data)
 {	
 	payment_server_t *f =data;
-	fprintf(fd,"%s;%s;%s;%s\n",f->name,f->host,f->port,f->key);
+	fprintf(fd,"%s;%s;%s;%s;%ld\n",f->name,f->host,f->port,f->key,f->TTL);
 	
 	return 0;
 }
@@ -97,6 +98,16 @@ ServerLoad(FILE *fd)
 	if( token == NULL )
 		return NULL;
 	strcpy(f->key,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;	
+	int status=sscanf(token,"%ld",&f->TTL);
+	if( status == 0 ){
+		return NULL;
+	}
+	
+	printf("--%ld--\n",f->TTL);
 	
 	return (void*)f;
 }
@@ -237,6 +248,8 @@ GetAckData(payment_server_t pack,void **data_ptr)
 	pos += MAX_PORT_LEN;
 	memmove(data+pos, pack.key, MAX_SERVER_KEY);
 	pos += MAX_SERVER_KEY;
+	memmove(data+pos, &(pack.TTL), sizeof(time_t));
+	pos += sizeof(time_t);
 	
 	*data_ptr = data;
 		

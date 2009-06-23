@@ -292,7 +292,6 @@ BuildMovie(char * line,char ** pathNameRet)
     aux=strtok(NULL,";");
     if(aux!=NULL){
 		int status=sscanf(aux,"%f",&resp->value);
-		printf("***%f***\n",resp->value);
 		if( status == 0 ){
 			free(resp);
 			return NULL;
