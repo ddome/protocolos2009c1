@@ -13,10 +13,6 @@
 #include "../Common/defines.h"
 #include "../Common/app.h"
 
-/* Direccion por default */
-#define HOST "172.16.96.129" 
-#define PORT 389
-
 /* Usuario root del ldap */
 #define ADMIN_DN "uid=admin,o=movie_store.com"
 #define ADMIN_PASSWD "admin"
@@ -32,7 +28,7 @@
 
 /* Funciones */
 
-LDAP * InitLdap(void);
+LDAP *  InitLdap(char *host, char *port);
 
 status ClientAdd(LDAP *ld, client_t client);
 

@@ -15,6 +15,8 @@
 
 #define LOCATION "servers_location.txt"
 
+#define LOOKUP_CONFIG "lookup.config"
+
 status  InitLookup(void);
 status  StartLookup(void);
 void    EndLookup(void);
