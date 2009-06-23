@@ -12,7 +12,7 @@
 /* Defines
 */
 #define MAXIP 	15
-#define MAXPORT 4
+#define MAXPORT 5
 
 /* Types
 */

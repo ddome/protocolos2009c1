@@ -1,0 +1,85 @@
+####################################################################
+		Gu’a de instalaci—n de MovieStore
+####################################################################
+Indice
+
+0.Dependencias
+1.Programa cliente
+2.Programa servidor
+3.Programa servidor lookup
+4.Programa servidor payment
+####################################################################
+			  0.Dependencias
+####################################################################
+slapd ( servidor de OpenLdap ) v2.4.9 or later.
+
+Para configurarlo correctamente se debe utilizar el archivo slapd.conf
+anexado "./ETC". 
+
+Ejemplo:
+Abrir una terminal
+
+$sudo /etc/init.d/slapd stop
+$slapd -f /home/ususario/slapd.conf
+$sudo /etc/init.d/slapd start
+
+
+####################################################################
+			  1. Programa cliente
+####################################################################
+
+Abrir una terminal
+$cd ./Client
+$make
+
+Una vez generado el ejecutable "client", copiarlo y pegarlo sobre 
+cualquier directorio con el archivo client.config.
+
+Para ejecutarlo
+$./client host port
+
+Donde host es el ip donde se escuchan conexiones y port el puerto.
+
+####################################################################
+			  2. Programa servidor
+####################################################################
+
+Abrir una terminal
+$cd ./Server
+$make
+
+Una vez generado el ejecutable "server", copiarlo y pegarlo sobre 
+cualquier directorio con el archivo server.config y movies_location.txt
+
+Para ejecutarlo
+./server
+
+####################################################################
+		       3. Programa servidor Lookup
+####################################################################
+
+Abrir una terminal
+$cd ./Lookup
+$make
+
+Una vez generado el ejecutable "lookup", copiarlo y pegarlo sobre 
+cualquier directorio con el archivo lookup.config y 
+servers_location.txt
+
+Para ejecutarlo
+$./lookup
+
+####################################################################
+		       4. Programa servidor payment
+####################################################################
+
+Abrir una terminal
+$cd ./Payment
+$make
+
+Una vez generado el ejecutable "payment", copiarlo y pegarlo sobre 
+cualquier directorio con el archivo payment.config y payment.cvs.
+
+Para ejecutarlo
+$./payment
+
