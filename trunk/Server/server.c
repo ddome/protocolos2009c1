@@ -235,8 +235,6 @@ StartServer(void)
 	fd_set afds;	
 	int fd, nfds;
 	nfds = getdtablesize();
-	struct timeval tv;
-	tv.tv_sec = DEFAULT_TIMEOUT;
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
 	
@@ -244,7 +242,7 @@ StartServer(void)
 		
 		memcpy(&rfds, &afds, sizeof(rfds));
 		
-		if( select(nfds, &rfds, NULL, NULL,&tv) < 0 ) {
+		if( select(nfds, &rfds, NULL, NULL,NULL) < 0 ) {
 			fprintf(stderr, "select: %s\n", strerror(errno));
 			return FATAL_ERROR;
 		}
