@@ -14,13 +14,14 @@ Indice
 slapd ( servidor de OpenLdap ) v2.4.9 or later.
 
 Para configurarlo correctamente se debe utilizar el archivo slapd.conf
-anexado "./ETC". 
+disponible en "./ETC". 
 
 Ejemplo:
+
 Abrir una terminal
 
 $sudo /etc/init.d/slapd stop
-$slapd -f /home/ususario/slapd.conf
+$slapd -f /home/usuario/slapd.conf
 $sudo /etc/init.d/slapd start
 
 
