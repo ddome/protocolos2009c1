@@ -980,6 +980,7 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 		free(to_send);
 		return CONNECT_ERROR;
 	}
+
 	setSocketTimeout(socket,TIMEOUT_DEFAULT);
 	/* Mando el paquete */
 	sendTCP(socket, to_send,header_size+size);

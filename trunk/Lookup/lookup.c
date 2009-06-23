@@ -98,15 +98,16 @@ ServerLoad(FILE *fd)
 	if( token == NULL )
 		return NULL;
 	strcpy(f->key,token);
-	
-	token = strtok (NULL,";");
+	f->TTL=0;
+	/*token = strtok (NULL,";");
 	if( token == NULL )
-		return NULL;	
+		return NULL;
 	int status=sscanf(token,"%ld",&f->TTL);
 	if( status == 0 ){
+    printf("ACA");
 		return NULL;
 	}
-	
+	printf("%ld",f->TTL);*/
 	return (void*)f;
 }
 

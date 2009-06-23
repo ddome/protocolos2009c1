@@ -198,7 +198,7 @@ InitServer(void)
 	
 	strcpy(host_lookup,address.addresses[2].ip);
 	strcpy(port_lookup,address.addresses[2].port);
-	strcpy(port_server_udp,address.addresses[3].ip);
+	strcpy(port_server_udp,address.addresses[3].port);
 	
 	/* Iniciacion de tablas de datos */
 
@@ -235,6 +235,8 @@ StartServer(void)
 	fd_set afds;	
 	int fd, nfds;
 	nfds = getdtablesize();
+	struct timeval tv;
+	tv.tv_sec = DEFAULT_TIMEOUT;
 	FD_ZERO(&afds);
 	FD_SET(passive_s,&afds);
 	
@@ -242,7 +244,7 @@ StartServer(void)
 		
 		memcpy(&rfds, &afds, sizeof(rfds));
 		
-		if( select(nfds, &rfds, NULL, NULL,NULL) < 0 ) {
+		if( select(nfds, &rfds, NULL, NULL,&tv) < 0 ) {
 			fprintf(stderr, "select: %s\n", strerror(errno));
 			return FATAL_ERROR;
 		}
@@ -257,11 +259,12 @@ StartServer(void)
 			
 			FD_SET(ssock, &afds);
 		}
-		
+
 		/* Atiendo cada pedido */
 		for(fd=0; fd<nfds; ++fd) {
 			if (fd != passive_s && FD_ISSET(fd, &rfds)) {
 				data=receiveTCP(fd);
+
 				/* Proceso el paquete */
 				if( Session(data,fd) != FATAL_ERROR ) {
 					close(fd); // Tengo que cerrar la conexion?
@@ -271,6 +274,7 @@ StartServer(void)
 				else {
 					return FATAL_ERROR;
 				}
+
 			}
 		}
 	}	
@@ -1008,6 +1012,31 @@ SendPaymentServerLocationRequest( char *name )
 	return ack;
 }
 
+static payment_server_t *
+PaymentServerCacheSearch(char * pay_name)
+{
+    /*payment_buffer tabla de hash*/
+  
+    payment_server_t aux,*resp;
+    unsigned long serverTTL;
+    int pos;
+    
+    strcpy(aux.name, pay_name);
+    if( (pos=Lookup(payment_buffer, &aux)) == -1 )
+    {
+	return NULL;
+    }
+    resp=GetHElement(payment_buffer, pos);
+    sscanf(resp->key,"%ld",&serverTTL);
+    if( (time(NULL) - resp->TTL) >= serverTTL )
+    {
+	HDelete(payment_buffer, &aux);
+	return NULL;
+    }
+    
+    return resp;
+}
+
 static int
 PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
 {
@@ -1016,25 +1045,39 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
     char * resp;
     char * req;
     int socket;
+    int isNew=0;
 	
-	payment_server_t location; 
-	
-	/* Tendrias que implementar una funcion que busque en hashADT buffer_lookup (es global, ya esta creado)
-	 * por un payment_server. SI devuelve NULL es porque no lo encontro o
-	 * el tiempo esta vencido y deberias buscarlo en el lookup tal como
-	 * puse dentro del if */
-	
-	if( /*(location=FUNCIONQUEBUSCAENELBUFFER(pay_name))==NULL)*/ 1 ) {
-		location = SendPaymentServerLocationRequest(pay_name);
-	}
+    payment_server_t location,*respCache; 
     
-	if( strcmp(location.name,"NOT_EXISTS") == 0 ) {
-		return PAY_SERVER_ERROR;
-	}
-	if( strcmp(location.name,"CONNECTION ERROR") == 0 ) {
-	    return PAY_ERROR;
-	}
-		
+    /* Tendrias que implementar una funcion que busque en hashADT buffer_lookup (es global, ya esta creado)
+	* por un payment_server. SI devuelve NULL es porque no lo encontro o
+	* el tiempo esta vencido y deberias buscarlo en el lookup tal como
+	* puse dentro del if */
+    
+    if( (respCache=PaymentServerCacheSearch(pay_name))==NULL )
+    {
+	printf("Busco uno nuevo!\n");
+	    location = SendPaymentServerLocationRequest(pay_name);
+	    isNew=1;
+    }
+    else
+    {
+	printf("Ya estaba y tenia TTL valido\n");
+	location=*respCache;
+	free(respCache);
+    }
+    if( strcmp(location.name,"NOT_EXISTS") == 0 ) {
+	    return PAY_SERVER_ERROR;
+    }
+    if( strcmp(location.name,"CONNECTION ERROR") == 0 ) {
+	return PAY_ERROR;
+    }
+    if(isNew)
+    {
+	location.TTL=time(NULL);
+	HInsert(payment_buffer, &location);
+    }
+	    
     strcpy(request.clientServer, pay_name);
     strcpy(request.accountName, pay_user);
     strcpy(request.accountNumber, pay_passwd);
@@ -1076,7 +1119,7 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
     }
     
     close(socket);
-	return PAY_OK;
+    return PAY_OK;
 }
 
 static char *
