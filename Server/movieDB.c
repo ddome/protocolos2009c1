@@ -136,7 +136,6 @@ InsertMovie(dbADT db,movie_t * movie,const char * pathName)
 	return ERROR;
     }
     strncpy(newMovie->pathName,pathName,len);
-    /*hacer free*/
     return InsertNewMovie(db,newMovie);
 }
 

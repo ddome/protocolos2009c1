@@ -7,7 +7,6 @@ int prepareUDP(const char * host,const char * port)
 
 	if( (socketFD<0) || (socketFD=socket(AF_INET,SOCK_DGRAM,0)) == -1 )
 	{
-		//Agregar el syslog
 		socketFD=GEN_ERROR;
 	}
 	else
@@ -35,20 +34,9 @@ int prepareUDP(const char * host,const char * port)
 				case ENOTSOCK: printf("sockfd is a descriptor for a file, not a socket.\n");
 					    break;
 				default: printf("Otro error\n");
+
 			    }
-				
-			    /*printf("1\n");
-				//Agregar syslog
-				if(errno==EADDRINUSE)
-				{
-					*ver si esto esta bien, la idea es que avise cuando un
-					 * puerto ya esta ocupado.
-					socketFD=ADD_IN_USE;
-				}
-				else
-				{
-					socketFD=GEN_ERROR;
-				}*/
+				socketFD = -1;
 			}
 		}
 	}
@@ -73,14 +61,14 @@ sendUDP(int socketFD,void * data,host_t dest)
     
     if(socketFD>=0)
     {
-	if(sendto(socketFD,data,UDP_MTU,0,(struct sockaddr *)&sendAddress,sizeof(struct sockaddr_in))<0)
-	{
-	    return -1;
-	}
-	else
-	{
-	    return 0;
-	}
+		if(sendto(socketFD,data,UDP_MTU,0,(struct sockaddr *)&sendAddress,sizeof(struct sockaddr_in))<0)
+		{
+			return -1;
+		}
+		else
+		{
+			return 0;
+		}
     }
     
     return socketFD;
@@ -104,7 +92,6 @@ receiveUDP(int socketFD,host_t * sender)
     
 
     dir=inet_ntoa(sendAddress.sin_addr);
-    printf("%s\n",dir);
     port=ntohs(sendAddress.sin_port);
     sender->port=port;
     strncpy(sender->dir_inet,dir,DIR_INET_LEN);
@@ -116,7 +103,6 @@ receiveUDP(int socketFD,host_t * sender)
 void 
 CloseUDP(int socketFD)
 {
-	//ver si combiene close o shutdown
 	close(socketFD);
 	return;
 }

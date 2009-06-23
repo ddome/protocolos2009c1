@@ -4,14 +4,6 @@ int prepareTCP(const char * host,const char * port,type_t type)
 {
 	int socketFD=0;
 	struct sockaddr_in sAddress;
-	//struct hostent	*phe;
-	struct protoent *ppe;
-	
-	/*if ( (ppe = getprotobyname("tcp")) == 0)
-	{
-	    //Agregar syslog
-	    socketFD=GEN_ERROR;
-	}*/
 	
 	if( (socketFD<0) || (socketFD=socket(AF_INET,SOCK_STREAM,0)) == -1 )
 	{
@@ -23,15 +15,8 @@ int prepareTCP(const char * host,const char * port,type_t type)
 		memset(&sAddress, 0, sizeof(sAddress));
 		sAddress.sin_family=AF_INET;
 		sAddress.sin_port=htons((unsigned short)atoi(port));
-		//if(type==prepareServer)
-			sAddress.sin_addr.s_addr = INADDR_ANY;
-		/*else
-		{
-			if ( (phe = gethostbyname(host)) )
-				memcpy(&sAddress.sin_addr, phe->h_addr, phe->h_length);
-			else if ((sAddress.sin_addr.s_addr = inet_addr(host))==INADDR_NONE)
-				socketFD=INV_HOST;
-		}*/
+		sAddress.sin_addr.s_addr = INADDR_ANY;
+	
 		if(socket>=0)
 		{
 			if( bind(socketFD,(struct sockaddr *)&sAddress,
@@ -52,18 +37,7 @@ int prepareTCP(const char * host,const char * port,type_t type)
 				default: printf("Otro error\n");
 			    }
 				
-			    /*printf("1\n");
-				//Agregar syslog
-				if(errno==EADDRINUSE)
-				{
-					*ver si esto esta bien, la idea es que avise cuando un
-					 * puerto ya esta ocupado.
-					socketFD=ADD_IN_USE;
-				}
-				else
-				{
-					socketFD=GEN_ERROR;
-				}*/
+				socketFD = -1;
 			}
 		}
 	}
@@ -95,7 +69,6 @@ int connectTCP(const char * host,const char * port)
 	struct hostent	*phe;
 	if( (socketFD=socket(AF_INET,SOCK_STREAM,0)) == -1 )
 	{
-		//Agregar el syslog
 		socketFD=GEN_ERROR;
 	}
 	else
@@ -113,7 +86,6 @@ int connectTCP(const char * host,const char * port)
 		{
 			if( connect(socketFD,(struct sockaddr *)&cAddress,sizeof(cAddress)) == -1 )
 			{
-				//Agregar syslog y switch de errores.
 				socketFD=GEN_ERROR;
 			}
 		}
@@ -129,7 +101,6 @@ int acceptTCP(int socketFD)
 	newSocketFD=accept(socketFD,NULL,NULL);
 	if(newSocketFD==-1)
 	{
-		//Agregar syslog
 		switch(errno)
 		{
 			case ECONNABORTED:	newSocketFD=CONN_ABORTED;
@@ -142,34 +113,7 @@ int acceptTCP(int socketFD)
 	
 	return newSocketFD;
 }
-/*
-int sendTCP(int socketFD,void * data,size_t size)
-{
-	int ret=0;
-	u_size header_size;
-	
-	header_size = size;
-	
-	// Mando el tamanio del paquete a levantar
-	send(socketFD,&header_size,sizeof(u_size),0);
-	
-	if(send(socketFD,data,size,0)==-1);
-	{
-		//Agregar syslog
-		switch(errno)
-		{
-			case ECONNRESET: 	ret=CONN_RST_PEER;
-								break;
-			case EINVAL:
-			case EFAULT: 		ret=INV_ARGS;
-								break;
-			case EMSGSIZE: 		ret=MSG_SIZE_ERR;
-								break;
-			default:            ret=GEN_ERROR;
-		}
-	}
-	return ret;
-}*/
+
 
 
 int sendTCP(int socketFD,void * data,size_t size)
@@ -177,19 +121,17 @@ int sendTCP(int socketFD,void * data,size_t size)
 	int ret=0;
 	void * toSend;
 	
-	if( (toSend=malloc(sizeof(u_size) + size))==NULL )
+	/*if( (toSend=malloc(sizeof(u_size) + size))==NULL )
 	{
-	    //Agregar syslog
 	    return GEN_ERROR;
-	}
+	}*/
 	
-	memmove(toSend,&size,sizeof(u_size));
-	memmove(toSend+sizeof(u_size),data,size);
+	//memmove(toSend,&size,sizeof(u_size));
+	//memmove(toSend+sizeof(u_size),data,size);
 
-	if(send(socketFD,toSend,sizeof(u_size)+size,0)==-1);
+	if(send(socketFD,&size,sizeof(u_size),0)==-1);
 	{
-		//perror("Send: ");
-		//Agregar syslog
+		
 		switch(errno)
 		{
 			case ECONNRESET: 	ret=CONN_RST_PEER;
@@ -203,7 +145,23 @@ int sendTCP(int socketFD,void * data,size_t size)
 		}
 	}
 	
-	free(toSend);
+	if(send(socketFD,data,size,0)==-1);
+	{
+		
+		switch(errno)
+		{
+			case ECONNRESET: 	ret=CONN_RST_PEER;
+				break;
+			case EINVAL:
+			case EFAULT: 		ret=INV_ARGS;
+				break;
+			case EMSGSIZE: 		ret=MSG_SIZE_ERR;
+				break;
+			default:            ret=GEN_ERROR;
+		}
+	}
+	
+	//free(toSend);
 
 	return ret;
 }

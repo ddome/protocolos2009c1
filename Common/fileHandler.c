@@ -66,11 +66,6 @@ CreateFile(char*path,u_size size)
 {
 	FILE *out;
 	out = fopen(path,"wb+");
-	int i;
-	
-	/*for(i=0; i<size; i++ ) {
-		fputc('x',out);		
-	}*/
 	
 	return out;
 }
