@@ -13,9 +13,9 @@ COMMON_SRC = Common
 PAYMENT_SRC = Payment
 DES_SRC = Common/des/source
 
-CLIENT_OBJ = client.o main.o Promt.o scannerADT.o tree.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o
-SERVER_OBJ = server.o main.o hashADT.o client_ldap.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o database_hanlder.o counter.o movieDB.o paymentServerLib.o scannerPS.o listADT.o md5.o
-PL_OBJ = main.o lookup.o list.o UDPLib.o hashADT.o
+CLIENT_OBJ = client.o main.o Promt.o scannerADT.o tree.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o config_parser.o
+SERVER_OBJ = server.o main.o hashADT.o client_ldap.o cypher.o fileHandler.o genlib.o TCPLib.o UDPLib.o des.o bit.o database_hanlder.o counter.o movieDB.o paymentServerLib.o config_parser.o scannerPS.o listADT.o md5.o
+PL_OBJ = main.o lookup.o list.o UDPLib.o hashADT.o config_parser.o
 PAYMENT_OBJ = main.o hashADT.o payment.o payment_db.o paymentServerLib.o scannerPS.o TCPLib.o config_parser.o
 
 
