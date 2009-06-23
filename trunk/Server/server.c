@@ -755,21 +755,14 @@ UserDownload(request_t req,int socket,char *user,char *passwd)
 	else if( !UserCanAcces(user, passwd) ) {
 		ret = __USER_ACCESS_DENY__;
 	}
-	
-	fprintf(stderr, "ACA LLEGO GUACHIN\n");
 	/* Busco la informacion del archivo, verifico permisos y nivel de descarga */
 	if( ret == __DOWNLOAD_START__ ) {
-		fprintf(stderr, "ACA TAMBIEN\n");
 		fprintf(stderr, "%s\n",req.ticket);
 		if( (file_info=GetTicketInfo(req.ticket)) == NULL ) {
-			fprintf(stderr, "PASO ALGO FULERO FULERO\n");	
 			ret = __DOWNLOAD_ERROR__;
 		}
 		else {
-			fprintf(stderr, "ESTA TODO RE PIOLA, le quedan %d bajadas\n",file_info->n_downloads);
-			fprintf(stderr, "%s\n",file_info->path);
 			movieName=GetNameFromPath(file_info->path);
-			printf("ACAAAAAAAAAAAAAA: (%s)\n",movieName);
 			strcpy(ack.title,movieName);
 			ack.size = GetFileSize(file_info->path);
 		}
@@ -788,8 +781,6 @@ status
 UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 {		
 	ticket_info_t *file_info;
-		
-	fprintf(stderr,"Antes\n");
 	
 	/* Me fijo si esta logueado */
 	if( strcmp(user, "anonimo") == 0 ) {
@@ -804,8 +795,6 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 		/* Si no es valido no empiezo la descarga */
 		return OK;
 	}
-
-	fprintf(stderr,"%s %s\n",start.ip,start.port);
 	
 	/* descuento la descarga */
 	file_info->n_downloads -= 1;
@@ -816,14 +805,10 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 	}
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
 	
-	printf("Le quedan %d bajadas\n",file_info->n_downloads);
 	syslog(LOG_INFO,"El usuario %s inicio la descarga de la pelicula %s. Le quedan %d descargas."
 			,user,GetNameFromPath(file_info->path),(int)file_info->n_downloads);
 	switch( fork() ) {
 		case 0:
-			/* Espero a que se establezca la conexion */
-			sleep(2); //Cambiar esto porque es muy villero
-			fprintf(stderr,"Empiezoooooo\n");
 			if( SendMovie(file_info->path,start.ip,start.port) != OK )
 			    return OK;
 			else
@@ -945,7 +930,6 @@ SendMovie(char *path,char *ip,char *port)
 	strcpy(header.title,title);
 	fd = fopen(path,"rb");
 
-	printf("Voy a mandarle %s\n",header.title);
 	for(i=0;i<total_packets;i++) {
 		bytes_read = GetFileData(fd,_FILE_SIZE_,i,&data);
 		header.size = bytes_read;
@@ -960,7 +944,6 @@ SendMovie(char *path,char *ip,char *port)
 		    exitPipe=0;
 		    return ERROR;
 		}
-		fprintf(stderr,"send %d/%ld\n", i,total_packets);
 		
 		free(data);
 		free(header_data);
@@ -970,7 +953,7 @@ SendMovie(char *path,char *ip,char *port)
 	close(socket);
 	fclose(fd);
 	free(title);
-	fprintf(stderr,"Termine de transmitir\n");
+	fprintf(stderr,"Termine de transmitir %s\n",path);
 	return OK;
 }
 
@@ -1006,7 +989,7 @@ SendPaymentServerLocationRequest( char *name )
 	}
 	GetPaymentLocationPack(ack_data,&ack);
 	
-	fprintf(stderr,"%s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);
+	printf("Recibi %s %s %s %s\n",ack.name,ack.host,ack.port,ack.key);
 		
 	close(socket);
 	return ack;
@@ -1030,8 +1013,8 @@ PaymentServerCacheSearch(char * pay_name)
     sscanf(resp->key,"%ld",&serverTTL);
     if( (time(NULL) - resp->TTL) >= serverTTL )
     {
-	HDelete(payment_buffer, &aux);
-	return NULL;
+		HDelete(payment_buffer, &aux);
+		return NULL;
     }
     
     return resp;
@@ -1052,13 +1035,11 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
     
     if( (respCache=PaymentServerCacheSearch(pay_name))==NULL )
     {
-		printf("Busco uno nuevo!\n");
 	    location = SendPaymentServerLocationRequest(pay_name);
 	    isNew=1;
     }
     else
     {
-		printf("Ya estaba y tenia TTL valido\n");
 		location=*respCache;
 		free(respCache);
     }
@@ -1103,10 +1084,7 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
         close(socket);
         return PAY_ERROR;
     }
-
-	printf("_________________________________________\n");
-	printf("%s\n",resp);
-	printf("_________________________________________\n");
+	
     if(!ParsePSReply(resp, &reply))
     {
 		close(socket);
@@ -1135,7 +1113,8 @@ MakeTicket(char *user,char *movie_name)
 	/* Genero el ticket */
 	ticket_number = tickets_counter++;
 	SaveCounter(tickets_counter,TICKETS_FREE_PATH);	
-	sprintf(ticket_string, "10%d",ticket_number);
+	
+	sprintf(ticket_string, "%d", ticket_number);
 	/* Lo asocio a una descarga */
 	if( (file=GetFileInfo(movie_name)) == NULL )
 		return NULL;
@@ -1143,11 +1122,10 @@ MakeTicket(char *user,char *movie_name)
 	strcpy(ticket->MD5, file->MD5);
 	strcpy(ticket->ticket, ticket_string);
 	ticket->n_downloads = (unsigned char)GetUserLevel(ld, user);
-	fprintf(stderr,"Registre el ticket con nivel %d\n",ticket->n_downloads);
-	fflush(stderr);
 	/* Inserto el ticket generado para su posterior uso */	
 	HInsert(tickets_generated, ticket);
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
+	
 	
 	return ticket_string;
 }
@@ -1159,7 +1137,6 @@ MovieValue(char *movie_name)
 	if( (aux=GetFileInfo(movie_name)) == NULL )
 		return -1;
 	else {
-		printf("valor de la peli: %f\n",aux->value);
 		return aux->value;
 	}
 }
@@ -1173,13 +1150,9 @@ GetFileInfo(char *name)
 	
 	strcpy(file.name, name);
 	if( (pos=Lookup(file_paths, &file)) == -1 ) {
-		fprintf(stderr, "No lo encontre carajo %d\n",pos);
 		return NULL;
 	}
-	fprintf(stderr, "Lo encontre y esta en %d\n",pos);
 	file_ptr=GetHElement(file_paths, pos);
-	
-	fprintf(stderr, "(%s) (%s)\n", file_ptr->name,file_ptr->path);
 	
 	return file_ptr;
 }
@@ -1192,15 +1165,11 @@ GetTicketInfo(char *ticket)
 	int pos;	
 	
 	strcpy(file_info.ticket, ticket);
-	fprintf(stderr, "Voy a buscar --%s-- \n",file_info.ticket); 
+ 
 	if( (pos=Lookup(tickets_generated, &file_info)) == -1 ) {
-		fprintf(stderr, "No lo encontre carajo %d\n",pos);
 		return NULL;
 	}
-	fprintf(stderr, "Lo encontre y esta en %d\n",pos);
 	file_ptr=GetHElement(tickets_generated, pos);
-	
-	fprintf(stderr, "%s %s bajadas:%d\n", file_ptr->ticket,file_ptr->path,file_ptr->n_downloads);
 	
 	return file_ptr;
 }
@@ -1379,16 +1348,12 @@ GetUsersListData( client_t **users, u_size n_users, void **data_ptr )
 	int i;
 	for(i=0;i<n_users;i++){
 		memmove(data+pos, users[i]->user, MAX_USER_LEN);
-		printf("%s\n",users[i]->user);
 		pos+=MAX_USER_LEN;
 		memmove(data+pos, users[i]->mail, MAX_USER_MAIL);
-		printf("%s\n",users[i]->mail);
 		pos+=MAX_USER_MAIL;
 		memmove(data+pos, users[i]->desc, MAX_USER_DESC);
-		printf("%s\n",users[i]->desc);
 		pos+=MAX_USER_DESC;
 		memmove(data+pos, &(users[i]->level), sizeof(unsigned char));
-		printf("%d\n",users[i]->level);
 		pos+=sizeof(unsigned char);
 	}
 	
@@ -1408,11 +1373,9 @@ GetGensListData(char **list,u_size n_gens,void **data_ptr)
 	
 	pos = 0;
 	int i;
-	printf("cantidad de generos %d\n",n_gens);
 	for(i=0;i<n_gens;i++){
 		memmove(data+pos, list[i], MAX_MOVIE_GEN);
 		pos+=MAX_MOVIE_GEN;
-		printf("%d genero: %s\n",i,list[i]);
 	}
 	
 	*data_ptr = data;

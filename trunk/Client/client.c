@@ -89,8 +89,7 @@ static int exitPipe=0;
 void
 intHandler(int signum)
 {
-    printf("Saliendo...intHandler\n");
-    fflush(0);
+
     kill(getppid(),SIGCHLD);
     exit(EXIT_FAILURE);
 }
@@ -100,11 +99,11 @@ sigpipeHandler(int signum)
 {
     if(getpid()==mainProcess_pid)
     {
-	printf("Saliendo en sigpipeHandler procepso principal\n");
-	exitPipe=1;
-	return;
+
+		exitPipe=1;
+		return;
     }
-    printf("Saliendo...sigpipeHandler\n");
+    
     fflush(0);
     exit(0);
 }
@@ -112,8 +111,6 @@ sigpipeHandler(int signum)
 void
 childHandler(int signum)
 {
-    printf("Termino un hijo\n");
-    fflush(0);
     int i;
     wait(&i);
 }
@@ -248,6 +245,7 @@ NewDownload(int ssock)
 	boolean exit;
 	download_t header;
 	void *packet;
+	char name[MAX_MOVIE_LEN];
 
 	u_size header_size;
 	FILE *fd;
@@ -264,6 +262,7 @@ NewDownload(int ssock)
 	header_size = GetDownloadPack(packet,&header);
 	
 	fd = fopen(header.title,"wb+");	
+	strcpy(name,header.title);
 	/* Lo bajo a disco */
 	PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
 	/* Verifico la cantidad total de paquetes a descargar */
@@ -293,6 +292,7 @@ NewDownload(int ssock)
 		if( n_packet >= total_packets )
 			exit = TRUE;
 	}
+	printf("Termine de transmitir %s\n",name);
 	fclose(fd);
 	closeTCP(ssock);
 	
@@ -557,7 +557,6 @@ UserDownload(char * ticket)
 	
 	strcpy(request.ticket,ticket);
 	size = GetRequestData(request,&data);
-	fprintf(stderr, "%s\n",data);
 	/* Mando el pedido */
 	download_info = SendDownloadRequest(data, size);
 	free(data);
@@ -581,7 +580,7 @@ UserDownload(char * ticket)
 		case __DOWNLOAD_START__:
 			ret = DOWNLOAD_OK;
 			/* Reservo espacio en el disco local para el archivo que voy a bajar */
-			printf("(%s)\n",download_info.title);
+			printf("Archivo a descargar (%s)\n",download_info.title);
 			if( (fd = CreateFile(download_info.title,download_info.size)) == NULL )
 				ret = DOWNLOAD_ERROR;
 			/* Comienzo a descargar */
@@ -890,8 +889,6 @@ SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr)
 	}
 	else
 		ack_header.total_objects = 0;
-
-	/* Cierro la conexion????? */
 	close(socket);
 	return ack_header.total_objects;
 }
@@ -1137,7 +1134,7 @@ SendBuyRequest(void *packet, u_size size)
 	    return download_info;
 	}
 	GetBuyTicketPack(ack_data, &download_info);
-	/* Cierro la conexion????? */
+
 	close(socket);
 	return download_info;	
 }
@@ -1228,7 +1225,6 @@ ListenMovie(FILE *fd,char *port,char *ticket)
 		    return TIMEOUT_ERROR;
 		}
 		header_size = GetDownloadPack(packet,&header);
-		fprintf(stderr,"caca: (%ld) (%ld)\n",header.n_packet,n_packet);
 		/* Lo bajo a disco */
 		PutFileData(fd,_FILE_SIZE_, header.n_packet,packet+header_size,header.size);
 		/* Verifico la cantidad total de paquetes a descargar */
@@ -1238,7 +1234,6 @@ ListenMovie(FILE *fd,char *port,char *ticket)
 		/* Me fijo si llego a la cantidad total de paquetes bajados */
 		if( n_packet >= total_packets )
 			exit = TRUE;
-		fprintf(stderr,"caca: (%ld) (%ld)\n",header.n_packet,n_packet);
 	}
 	closeTCP(ssock);
 	closeTCP(passive_s);

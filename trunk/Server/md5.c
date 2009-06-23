@@ -32,7 +32,6 @@ getMD5(const char * pathName)
     }
     
     //MD5_Final(resp,&md5);
-    printf("\n");
     fclose(file);
     
     return (char *)resp;
