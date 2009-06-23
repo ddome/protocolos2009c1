@@ -89,7 +89,8 @@ InitPaymentServer(void)
     {
         return FATAL_ERROR;
     }
-        
+    /*Inicio el servicio de syslog*/
+    openlog("PaymentServer",0,LOG_LOCAL1);
 	transaction_id = 0;
 	return OK;
 }
@@ -165,6 +166,7 @@ StartPaymentServer(void)
 void
 EndPaymentServer(void)
 {
+    closelog();
     FreeHash(psDatabase);
     ExitMessage();
 }
@@ -204,7 +206,8 @@ Session(void *data,int socket)
 			    exitPipe=0;
 			    return OK;
 			}
-		}		
+		}
+		syslog(LOG_INFO,"Se recibio un request mal formado.");
 		return ERROR;
 	}
 	/* Request bien formado, busco al cliente en la db
@@ -229,7 +232,8 @@ Session(void *data,int socket)
 			    exitPipe=0;
 			    return OK;
 			}
-		}		
+		}
+		syslog(LOG_INFO,"Se recibio un nombre de usuario invalido: %s.",client.accountName);
 		return ERROR;
 	}
 	clientPtr = GetHElement(psDatabase, status);
@@ -252,6 +256,7 @@ Session(void *data,int socket)
 			    return OK;
 			}
 		}
+		syslog(LOG_INFO,"Se usuario %s intento realizar un pago por %f pero su balance era de %f.",client.accountName,request.amount,clientPtr->amount);
 		return ERROR;
 	}
 	/* Si todo esta en orden, se realiza el debito
@@ -271,6 +276,8 @@ Session(void *data,int socket)
 	SaveHashTable(psDatabase, PAYMENT_DB);
 	sendTCP(socket, (void*)reply, strlen(reply) + 1);
 	free(data);
+	syslog(LOG_INFO,"Se le ha descontado al usuario %s la cantidad de %f. Su balance ahora es de %f.",client.accountName,request.amount,clientPtr->amount);
+
 	if(exitPipe==1)
 	{
 	    exitPipe=0;

@@ -19,6 +19,7 @@
 #include <limits.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <syslog.h>
 
 /* Project Includes
 */
