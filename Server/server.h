@@ -12,15 +12,7 @@
 #include <sys/types.h>
 #include <syslog.h>
 
-#define HOST_SERVER "127.0.0.1"
-
-#define PORT_SERVER   "1048"
-
-#define PORT_SERVER_UDP "1071"
-
-#define HOST_LOOKUP "127.0.0.1"
-
-#define PORT_LOOKUP "1070"
+#define SERVER_CONFIG "server.config"
 
 #define TICKETS_DATA_PATH "tickets_data"
 
@@ -29,6 +21,8 @@
 #define FILES_DATA_PATH "movies_location.txt"
 
 #define DEFAULT_TIMEOUT 10
+
+
 
 /*************************************************************************/
 /*		            Manejo del servidor                          */

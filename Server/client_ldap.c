@@ -23,15 +23,15 @@ static boolean MovieListExists(LDAP *ld);
 static char *GetClientFilter(char *user);
 
 LDAP * 
-InitLdap(void)
+InitLdap(char *host, char *port)
 {
 	LDAP *ld;
 	int version;
 	
 	/* Conectarse al servidor */
-	ld = ldap_open(HOST,PORT);
+	ld = ldap_open(host,atoi(port));
 	if( ld == NULL ){
-		fprintf(stderr,"InitLdap ERROR: No pudo establecerce una coneccion con el servidor LDAP en el host %s:%d\n",HOST,PORT);
+		fprintf(stderr,"InitLdap ERROR: No pudo establecerce una coneccion con el servidor LDAP en el host %s:%d\n",host,port);
 	}
 	
 	/* Seteo a la version 3 */

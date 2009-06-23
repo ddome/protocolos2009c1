@@ -11,12 +11,16 @@
 #include "Prompt.h"
 #include "../Common/cypher.h"
 #include "../Common/fileHandler.h"
+#include "../Common/config_parser.h"
 
 char log_user[MAX_USER_LEN];
 char log_passwd[MAX_USER_PASS];
 
 char client_host[MAX_HOST_LEN];
 char client_port[MAX_PORT_LEN];
+
+char server_port[MAX_PORT_LEN];
+char server_host[MAX_HOST_LEN];
 
 /* Static Functions */
 
@@ -124,18 +128,38 @@ InitClient(char *host,char *port)
 	strcpy(log_user, "anonimo");
 	strcpy(log_passwd, "anonimo");
 	
+	FILE * config;
+    address_array_t address;
+    /* Abrir archivo de configuracion
+	 */
+    if((config = fopen(SERVER_CONFIG, "r+")) == NULL)
+    {
+        fprintf(stderr, "No se pudo abrir el archivo de configuracion.\n");
+        return FATAL_ERROR;
+    }
+    /* Obtener ips y puertos del archivo de configuracion
+	 */
+    if(!GetAddresses(config, &address) || address.count != 2)
+    {
+        fprintf(stderr, "Archivo de configuracion invalido o corrupto\n");
+		return FATAL_ERROR;
+    }
+		
 	if( host != NULL ) {
 		strcpy(client_host, host);
-		printf("%s %s\n",host,port);
 	}
 	else
-		strcpy(client_host, client_host);
+		strcpy(client_host, address.addresses[1].ip);
 	
 	if( port != NULL ) {
 		strcpy(client_port, port);
 	}
 	else
-		strcpy(client_port, client_port);
+		strcpy(client_port, address.addresses[1].port);
+	
+	strcpy(server_host,address.addresses[0].ip );
+	strcpy(server_port,address.addresses[0].port );
+	
 	
 	mainProcess_pid=getpid();
 	return OK;
@@ -183,7 +207,7 @@ status
 InitDownloader(void)
 {
 	int ssock;
-
+	
 	/* Preparo el puerto que va a escuchar los pedidos de conexion de transferencia */
 	if( (passive_s=prepareTCP(client_host,client_port,prepareServer)) < 0 ) {
 		return FATAL_ERROR;
@@ -684,7 +708,7 @@ SendListGensRequest(list_movie_request_t ***out_ptr)
 	header_size = GetHeaderData(header, &header_data);	
 	
 	/* Me conecto al servidor */
-	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+	if( (socket=connectTCP(server_host,server_port)) < 0 ){
 		free(header_data);
 		return -1;
 	}
@@ -732,7 +756,7 @@ SendListUsersRequest(client_t ***out_ptr)
 	header_size = GetHeaderData(header, &header_data);	
 	
 	/* Me conecto al servidor */
-	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+	if( (socket=connectTCP(server_host,server_port)) < 0 ){
 		free(header_data);
 		return -1;
 	}
@@ -805,7 +829,7 @@ SendListMoviesRequest(void *data, u_size size, movie_t ***out_ptr)
 	memmove(to_send+header_size, data, size);
 	
 	/* Me conecto al servidor */
-	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+	if( (socket=connectTCP(server_host,server_port)) < 0 ){
 		free(to_send);
 		return -1;
 	}
@@ -952,7 +976,7 @@ SendRequest(u_size op_code,u_size total_objects,void *packet, u_size size)
 		memmove(to_send+header_size, packet, size);
 	}	
 	/* Me conecto al servidor */
-	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+	if( (socket=connectTCP(server_host,server_port)) < 0 ){
 		free(to_send);
 		return CONNECT_ERROR;
 	}
@@ -1008,7 +1032,7 @@ SendDownloadRequest(void *packet, u_size size)
 	memmove(to_send+header_size, packet, size);
 	free(data);
 	/* Me conecto al servidor */
-	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+	if( (socket=connectTCP(server_host,server_port)) < 0 ){
 		free(to_send);
 		return download_info;
 	}
@@ -1064,7 +1088,7 @@ SendBuyRequest(void *packet, u_size size)
 	memmove(to_send+header_size, packet, size);	
 	free(data);
 	/* Me conecto al servidor */
-	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+	if( (socket=connectTCP(server_host,server_port)) < 0 ){
 		free(to_send);
 		return download_info;
 	}
@@ -1115,7 +1139,7 @@ SendSignal(u_size op_code, void *packet, u_size size)
 	memmove(to_send + header_size,packet,size);
 	free(data);
 	/* Me conecto al servidor */
-	if( (socket=connectTCP(HOST_SERVER,PORT_SERVER)) < 0 ){
+	if( (socket=connectTCP(server_host,server_port)) < 0 ){
 		free(to_send);
 		return ERROR;
 	}

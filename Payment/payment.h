@@ -35,10 +35,10 @@
 
 /* Defines
 */
-#define PAYMENT_CONFIG "./config.ini"
-#define PAYMENT_DB "./payment.csv"
-#define HOST_PAYMENT "127.0.0.1"
-#define PORT_PAYMENT "1600"
+#define PAYMENT_CONFIG "payment.config"
+#define PAYMENT_DB "payment.csv"
+
+
 /* Function Declarations
 */
 

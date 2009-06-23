@@ -18,6 +18,7 @@
 #include "hashADT.h"
 #include "../Common/app.h"
 #include "../Common/genlib.h"
+#include "../Common/config_parser.h"
 #include "../Common/des/include/encrypt.h"
 #include "lookup.h"
 
@@ -28,6 +29,9 @@ static payment_server_t * GetServer(char *server_name);
 
 /* GetData(pack) */
 u_size GetAckData(payment_server_t pack,void **data_ptr);
+
+/* puerto en que escucha mensajes UDP */
+char port[MAX_PORT_LEN];
 
 int
 ServersComp( void * v1, void *v2 )
@@ -104,6 +108,26 @@ InitLookup(void)
 {
 	payment_servers = LoadHashTable(LOCATION, sizeof(payment_server_t), ServersComp, ServerHash, ServerSave, ServerLoad);
 	
+	FILE * config;
+    address_array_t address;
+    /* Abrir archivo de configuracion
+	 */
+    if((config = fopen(LOOKUP_CONFIG, "r+")) == NULL)
+    {
+        fprintf(stderr, "No se pudo abrir el archivo de configuracion.\n");
+        return FATAL_ERROR;
+    }
+    /* Obtener ips y puertos del archivo de configuracion
+	 */
+    if(!GetAddresses(config, &address) || address.count != 1)
+    {
+        fprintf(stderr, "Archivo de configuracion invalido o corrupto\n");
+		return FATAL_ERROR;
+    }
+	
+	strcpy(port, address.addresses[0].port);
+	
+	
 	return OK;
 }	
 
@@ -113,7 +137,7 @@ StartLookup(void)
 	int socket;
 	void *data;
 	host_t dest;
-	socket = prepareUDP("127.0.0.1", "1070");
+	socket = prepareUDP("127.0.0.1", port);
 	
 	while(1) {
 		data = receiveUDP(socket,&dest);

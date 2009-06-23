@@ -26,6 +26,7 @@
 #include "movieDB.h"
 #include "database_handler.h"
 #include "../Common/paymentServerLib.h"
+#include "../Common/config_parser.h"
 
 #define PAY_SERVER_ERROR			  4
 #define PAY_ERROR                 -3
@@ -54,6 +55,16 @@ dbADT db;
 
 /* Informacion de los tickets generados */
 COUNTER tickets_counter;
+
+/* Puerto en que manda mensajes UDP */
+char port_server_udp[MAX_PORT_LEN];  
+
+/* IP del server lookup */
+char  host_lookup[MAX_HOST_LEN]; 
+
+/* Puerto en que escucha el lookup */
+char port_lookup[MAX_PORT_LEN];  
+
 
 static int exitPipe=0;
 
@@ -150,13 +161,30 @@ InitServer(void)
 	int ret;
 	signal(SIGPIPE,sigpipeHandler);
 	signal(SIGCHLD,sigpipeHandler);
+	
+	FILE * config;
+    address_array_t address;
+    /* Abrir archivo de configuracion
+	 */
+    if((config = fopen(SERVER_CONFIG, "r+")) == NULL)
+    {
+        fprintf(stderr, "No se pudo abrir el archivo de configuracion.\n");
+        return FATAL_ERROR;
+    }
+    /* Obtener ips y puertos del archivo de configuracion
+	 */
+    if(!GetAddresses(config, &address) || address.count != 4)
+    {
+        fprintf(stderr, "Archivo de configuracion invalido o corrupto\n");
+    }
+	
 	/* Iniciar el servidor ldap */
-	if( (ld=InitLdap()) == NULL ) {
+	if( (ld=InitLdap(address.addresses[0].ip,address.addresses[0].port)) == NULL ) {
 		return FATAL_ERROR;
 	}
 	
 	/* Iniciar TCP */
-	if( (passive_s=prepareTCP(HOST_SERVER,PORT_SERVER,prepareServer)) < 0 ) {
+	if( (passive_s=prepareTCP(address.addresses[1].ip,address.addresses[1].port,prepareServer)) < 0 ) {
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",passive_s);
 		return FATAL_ERROR;
 	}	
@@ -164,6 +192,10 @@ InitServer(void)
 		fprintf(stderr,"No pudo establecerse el puerto para la conexion, retCode=(%d)\n",ret);
 		return FATAL_ERROR;
 	}
+	
+	strcpy(host_lookup,address.addresses[2].ip);
+	strcpy(port_lookup,address.addresses[2].port);
+	strcpy(port_server_udp,address.addresses[3].ip);
 	
 	/* Iniciacion de tablas de datos */
 
@@ -943,9 +975,9 @@ SendPaymentServerLocationRequest( char *name )
 	
 	strcpy(req.name,name);
 	req_size = GetPaymentRequestData( req, &req_data);	
-	socket = prepareUDP(NULL, PORT_SERVER_UDP);
-	lookup_server.port=(unsigned short)atoi(PORT_LOOKUP);
-	strncpy(lookup_server.dir_inet,HOST_LOOKUP,DIR_INET_LEN);
+	socket = prepareUDP(NULL, port_server_udp);
+	lookup_server.port=(unsigned short)atoi(port_lookup);
+	strncpy(lookup_server.dir_inet,host_lookup,DIR_INET_LEN);
 	setSocketTimeoutUDP(socket,3);
 	
 	do{
