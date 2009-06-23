@@ -276,13 +276,12 @@ Session(void *data,int socket)
 	SaveHashTable(psDatabase, PAYMENT_DB);
 	sendTCP(socket, (void*)reply, strlen(reply) + 1);
 	free(data);
-	syslog(LOG_INFO,"Se le ha descontado al usuario %s la cantidad de %f. Su balance ahora es de %f.",client.accountName,request.amount,clientPtr->amount);
-
 	if(exitPipe==1)
 	{
 	    exitPipe=0;
 	    return OK;
 	}
+	syslog(LOG_INFO,"Se le ha descontado al usuario %s la cantidad de %f. Su balance ahora es de %f.",client.accountName,request.amount,clientPtr->amount);
 	return OK;
 }
 

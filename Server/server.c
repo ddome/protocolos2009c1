@@ -590,9 +590,21 @@ ListGens(int socket)
 	header_size = GetHeaderData(header, &header_data);
 	
 	sendTCP(socket,header_data,header_size);
+	if(exitPipe==1)
+	{
+	    exitPipe=0;
+	    return OK;
+	}
 	
 	if( ret_code == __LIST_OK__ )
+	{
 		sendTCP(socket,list_data,list_size);
+		if(exitPipe==1)
+		{
+		    exitPipe=0;
+		    return OK;
+		}
+	}
 	
 	return OK;
 }
@@ -935,6 +947,7 @@ SendMovie(char *path,char *ip,char *port)
 	if( (socket=connectTCP(ip,port)) < 0 ){
 		return ERROR;
 	}
+	setSocketTimeout(ssock,TIMEOUT_DEFAULT);
 	total_packets = SplitFile(path,_FILE_SIZE_);
 	title = GetNameFromPath(path);
 	/* Mando los paquetes */
@@ -1090,8 +1103,13 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
     if( (socket=connectTCP(location.host,location.port)) < 0 ){
         return PAY_ERROR;
     }
-    
+    setSocketTimeout(ssock,TIMEOUT_DEFAULT);
     sendTCP(socket, (void*)req, strlen(req) + 1);
+    if(exitPipe==1)
+    {
+	exitPipe=0;
+	return PAY_ERROR;
+    }
     
     /* Espero por la respuesta del servidor */
     resp = (char*)receiveTCP(socket);
