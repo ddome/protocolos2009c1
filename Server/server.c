@@ -149,21 +149,11 @@ sigpipeHandler(int signum)
 	return;
 }
 
-void
-childHandler(int signum)
-{
-    printf("Termino un hijo\n");
-    fflush(0);
-    int i;
-    wait(&i);
-}
-
 status 
 InitServer(void)
 {
 	int ret;
 	signal(SIGPIPE,sigpipeHandler);
-	signal(SIGCHLD,sigpipeHandler);
 	
 	FILE * config;
     address_array_t address;
@@ -826,7 +816,7 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 	}
 	SaveHashTable(tickets_generated, TICKETS_DATA_PATH);
 	
-	printf("Le quedan %d bajadas/n",file_info->n_downloads);
+	printf("Le quedan %d bajadas\n",file_info->n_downloads);
 	syslog(LOG_INFO,"El usuario %s inicio la descarga de la pelicula %s. Le quedan %d descargas."
 			,user,GetNameFromPath(file_info->path),(int)file_info->n_downloads);
 	switch( fork() ) {
@@ -835,9 +825,9 @@ UserStartDownload(download_start_t start,int socket, char *user, char *passwd)
 			sleep(2); //Cambiar esto porque es muy villero
 			fprintf(stderr,"Empiezoooooo\n");
 			if( SendMovie(file_info->path,start.ip,start.port) != OK )
-				exit(EXIT_FAILURE);
+			    exit(EXIT_FAILURE);//return OK;
 			else
-				exit(EXIT_SUCCESS);
+			    exit(EXIT_SUCCESS);//return OK;
 			break;
 		case -1:
 			return ERROR;
@@ -947,7 +937,6 @@ SendMovie(char *path,char *ip,char *port)
 	if( (socket=connectTCP(ip,port)) < 0 ){
 		return ERROR;
 	}
-	setSocketTimeout(ssock,TIMEOUT_DEFAULT);
 	total_packets = SplitFile(path,_FILE_SIZE_);
 	title = GetNameFromPath(path);
 	/* Mando los paquetes */
@@ -969,7 +958,7 @@ SendMovie(char *path,char *ip,char *port)
 		if(exitPipe==1)
 		{
 		    exitPipe=0;
-		    exit(EXIT_FAILURE);
+		    return ERROR;
 		}
 		fprintf(stderr,"send %d/%ld\n", i,total_packets);
 		
@@ -982,7 +971,7 @@ SendMovie(char *path,char *ip,char *port)
 	fclose(fd);
 	free(title);
 	fprintf(stderr,"Termine de transmitir\n");
-	exit(EXIT_SUCCESS);
+	return OK;
 }
 
 static payment_server_t
@@ -1103,7 +1092,7 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
     if( (socket=connectTCP(location.host,location.port)) < 0 ){
         return PAY_ERROR;
     }
-    setSocketTimeout(ssock,TIMEOUT_DEFAULT);
+    setSocketTimeout(socket,DEFAULT_TIMEOUT);
     sendTCP(socket, (void*)req, strlen(req) + 1);
     if(exitPipe==1)
     {
