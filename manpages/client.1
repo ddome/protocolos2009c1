@@ -20,6 +20,16 @@ disponibles en el servidor. Dichas peliculas podran ser compradas y descargadas 
 
 
 
+.SH OPTIONS
+La aplicacion MovieStoreClient puede recibir dos argumentos por linea de comandos. El primero indica la direccion IP a donde debe conectarse el servidor
+para realizar la transferencia. El segundo argumento debe contener el puerto a donde debe conectarse. Si no se reciben estos argumentos se tomara la configuracion
+indicada en el archivo
+.B "client.config"
+
+
+
+
+
 .SH COMMANDS
 Los comandos disponibles una vez ejecutado el comando
 .B "client"
@@ -114,6 +124,16 @@ El comando logout termina la sesion actual.
 .B "exit"
 .PP
 El comando exit nos desloguea terminando la sesion actual y termina la ejecucion del programa.
+
+
+
+
+
+.SH CONFIGURACION
+Es importate que antes de ejecutar el cliente se configure apropiadamente el archivo
+.B "client.config"
+que debe encontrarse en el mismo directorio que el ejecutable
+.B "client"
 
 
 
