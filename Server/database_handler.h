@@ -71,4 +71,16 @@ int FileInfoComp( void * v1, void *v2 );
 
 int InitDB(dbADT db,char * pathName,hashADT files_info);
 
+/* Manejo del buffer temporal de peliculas */
+
+int ServersComp( void * v1, void *v2 );
+
+int ServerHash( void *v, int size );
+
+int ServerSave(FILE *fd,void *data);
+
+void * ServerLoad(FILE *fd);
+
+static payment_server_t * GetServer(hashADT table, char *server_name);
+
 #endif

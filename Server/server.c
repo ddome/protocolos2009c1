@@ -50,6 +50,9 @@ hashADT tickets_generated;
 /* Informacion de los archivos disponibles */
 hashADT file_paths;
 
+/* Buffer temporal de servidores payment devueltos por lookup */
+hashADT payment_buffer;
+
 /* Lista de peliculas */
 dbADT db;
 
@@ -213,6 +216,9 @@ InitServer(void)
 	if(InitDB(db,FILES_DATA_PATH,file_paths)==ERROR) {
 		return FATAL_ERROR;
 	}
+	
+	/* Buffer temporal de respuestas de lookup */
+	payment_buffer = NewHash(sizeof(payment_server_t), ServersComp, ServerHash, ServerSave, ServerLoad);
 
 	/* Tickets disponibles */
 	tickets_counter = LoadCounter(TICKETS_FREE_PATH);
@@ -276,6 +282,9 @@ StartServer(void)
 void
 EndServer(void)
 {
+
+	/** ACA LIBERA TODAS LAS TABLAS PORFA **/
+	
 	EndLdap(ld);
 }
 
@@ -982,7 +991,6 @@ SendPaymentServerLocationRequest( char *name )
 	
 	do{
 	    sendUDP(socket, req_data, lookup_server);
-
 	    ack_data = receiveUDP(socket, &lookup_server);
 	    intentos++;
 	}while(ack_data==NULL && intentos<3);
@@ -1008,7 +1016,17 @@ PayMovie(char *pay_name,char *pay_user,char *pay_passwd,int ammount)
     char * resp;
     char * req;
     int socket;
-	payment_server_t location = SendPaymentServerLocationRequest(pay_name);
+	
+	payment_server_t location; 
+	
+	/* Tendrias que implementar una funcion que busque en hashADT buffer_lookup (es global, ya esta creado)
+	 * por un payment_server. SI devuelve NULL es porque no lo encontro o
+	 * el tiempo esta vencido y deberias buscarlo en el lookup tal como
+	 * puse dentro del if */
+	
+	if( /*(location=FUNCIONQUEBUSCAENELBUFFER(pay_name))==NULL)*/ 1 ) {
+		location = SendPaymentServerLocationRequest(pay_name);
+	}
     
 	if( strcmp(location.name,"NOT_EXISTS") == 0 ) {
 		return PAY_SERVER_ERROR;
@@ -1160,6 +1178,8 @@ GetPaymentLocationPack(void * ack_data,payment_server_t * ack)
     pos+=MAX_PORT_LEN;
     memmove(ack->key,ack_data+pos,MAX_SERVER_KEY);
     pos+=MAX_SERVER_KEY;
+	memmove(&(ack->TTL),ack_data+pos,sizeof(time_t));
+    pos+=sizeof(time_t);
     
     return pos;
 }

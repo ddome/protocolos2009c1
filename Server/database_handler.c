@@ -318,9 +318,95 @@ BuildMovie(char * line,char ** pathNameRet)
     return resp;
 }
 	
+/* Buffer temporal de lookup */
+int
+ServersComp( void * v1, void *v2 )
+{
+	payment_server_t *t1,*t2;
+	
+	t1 = v1;
+	t2 = v2;
+	
+	return strcmp(t1->name, t2->name);
+}
 
+int
+ServerHash( void *v, int size )
+{
+	int i;
+	payment_server_t *t = v;
+	int num = 0;
+	
+	i=0;
+	while (t->name[i] != '\0' ) {
+		num += (t->name)[i];
+		i++;
+	}	
+	return  num % size;
+}
 
+int
+ServerSave(FILE *fd,void *data)
+{	
+	payment_server_t *f =data;
+	fprintf(fd,"%s;%s;%s;%s;%ld\n",f->name,f->host,f->port,f->key,f->TTL);
+	
+	return 0;
+}
 
+void *
+ServerLoad(FILE *fd)
+{	
+	payment_server_t *f = malloc(sizeof(payment_server_t));
+	char line[500];
+	char *token;
+	
+	if( fgets(line,500,fd) == NULL )
+		return NULL;
+	
+	token = strtok (line,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->name,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->host,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->port,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;
+	strcpy(f->key,token);
+	
+	token = strtok (NULL,";");
+	if( token == NULL )
+		return NULL;	
+	int status=sscanf(token,"%ld",&f->TTL);
+	if( status == 0 ){
+		return NULL;
+	}
+	
+	return (void*)f;
+}
+
+static payment_server_t *
+GetServer(hashADT table, char *server_name)
+{
+	payment_server_t aux;
+	int pos;
+	
+	strcpy(aux.name, server_name);
+	if( (pos=Lookup(table, &aux)) == -1 )
+		return NULL;
+	
+	return GetHElement(table, pos);
+}
 
 
 

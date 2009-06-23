@@ -7,6 +7,7 @@
 #define __APP_HEADER_H_
 
 #include "defines.h"
+#include <time.h>
 
 #define MAX_USER_LEN	50
 #define MAX_USER_PASS	50
